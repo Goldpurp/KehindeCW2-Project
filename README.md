@@ -49,3 +49,21 @@ To override this for another deployment, set:
 ```bash
 VITE_AZURE_API_BASE_URL=https://your-api-host/api
 ```
+
+## Deploy to Render
+
+This repo includes `render.yaml` for a Render static web service.
+
+Render will:
+
+- install dependencies with `npm ci`
+- build the frontend with `npm run build`
+- publish the `dist` folder
+- route React app paths back to `index.html`
+- connect the frontend to the Azure API through `VITE_AZURE_API_BASE_URL`
+
+In Render, create a new Blueprint or Static Site from:
+
+```text
+https://github.com/Goldpurp/KehindeCW2-Project
+```
