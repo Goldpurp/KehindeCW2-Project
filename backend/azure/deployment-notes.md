@@ -63,3 +63,10 @@ After that script succeeds, set the frontend API base URL to the printed `https:
 - A Cloud Shell zip deployment was started on 2026-07-10 and reached the Azure zip deployment polling step, but the public Function URL was still returning Azure's placeholder `503 Site Under Construction` page during final verification.
 - On 2026-07-11, the Azure Functions API was redeployed with token-based email/password signup and signin. Header-only local users are rejected unless the Function App explicitly enables `ALLOW_UNSAFE_HEADER_AUTH=true`.
 - The live Cosmos containers (`users`, `videos`, `comments`, `activities`) and the `videos` blob container were emptied after deployment so the app starts with no preloaded accounts or videos.
+- On 2026-07-12, the Function App CORS allowed origins were updated for the Render deployment:
+  - `https://kehindecw2-project.onrender.com`
+  - `http://127.0.0.1:3000`
+  - `http://localhost:3000`
+  - `http://127.0.0.1:3003`
+  - `http://localhost:3003`
+- CORS preflight checks for signup and authenticated video requests from Render returned `200 OK`.
