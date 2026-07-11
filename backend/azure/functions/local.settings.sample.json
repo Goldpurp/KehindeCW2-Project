@@ -1,0 +1,10 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "COSMOS_CONNECTION_STRING": "<cosmos-connection-string>",
+    "COSMOS_DATABASE_NAME": "kehindecw2",
+    "VIDEO_STORAGE_CONTAINER": "videos"
+  }
+}

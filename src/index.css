@@ -1,0 +1,193 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+html {
+  scroll-behavior: smooth;
+  background: #000;
+}
+
+body {
+  min-height: 100vh;
+  background: #000;
+  color-scheme: dark;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --color-gold-300: #e2e8f0;
+  --color-gold-400: #a1a1aa;
+  --color-gold-500: #52525b;
+  --color-purp-500: #a1a1aa;
+  --color-purp-600: #3f3f46;
+  --color-purp-750: #09090b;
+  --color-purp-800: #111111;
+  --color-purp-900: #050505;
+  --color-purp-950: #000000;
+  
+  --color-army-dark: #050505;
+  --color-army-green: #3f3f46;
+  --color-army-medium: #52525b;
+  --color-olive-drab: #a1a1aa;
+  --color-olive-light: #f4f4f5;
+  --color-tactical-black: #000000;
+}
+
+#app-root [class*="text-red-"],
+#app-root [class*="text-rose-"],
+#app-root [class*="text-pink-"],
+#app-root [class*="text-fuchsia-"],
+#app-root [class*="text-purple-"],
+#app-root [class*="text-violet-"],
+#app-root [class*="text-blue-"],
+#app-root [class*="text-cyan-"],
+#app-root [class*="text-sky-"],
+#app-root [class*="text-emerald-"],
+#app-root [class*="text-green-"],
+#app-root [class*="text-teal-"],
+#app-root [class*="text-lime-"],
+#app-root [class*="text-yellow-"],
+#app-root [class*="text-amber-"],
+#app-root [class*="text-orange-"] {
+  color: #f4f4f5 !important;
+}
+
+#app-root [class*="fill-red-"],
+#app-root [class*="fill-rose-"],
+#app-root [class*="fill-pink-"],
+#app-root [class*="fill-fuchsia-"],
+#app-root [class*="fill-purple-"],
+#app-root [class*="fill-violet-"],
+#app-root [class*="fill-blue-"],
+#app-root [class*="fill-cyan-"],
+#app-root [class*="fill-sky-"],
+#app-root [class*="fill-emerald-"],
+#app-root [class*="fill-green-"],
+#app-root [class*="fill-teal-"],
+#app-root [class*="fill-lime-"],
+#app-root [class*="fill-yellow-"],
+#app-root [class*="fill-amber-"],
+#app-root [class*="fill-orange-"] {
+  fill: #f4f4f5 !important;
+}
+
+#app-root [class*="bg-red-"],
+#app-root [class*="bg-rose-"],
+#app-root [class*="bg-pink-"],
+#app-root [class*="bg-fuchsia-"],
+#app-root [class*="bg-purple-"],
+#app-root [class*="bg-violet-"],
+#app-root [class*="bg-blue-"],
+#app-root [class*="bg-cyan-"],
+#app-root [class*="bg-sky-"],
+#app-root [class*="bg-emerald-"],
+#app-root [class*="bg-green-"],
+#app-root [class*="bg-teal-"],
+#app-root [class*="bg-lime-"],
+#app-root [class*="bg-yellow-"],
+#app-root [class*="bg-amber-"],
+#app-root [class*="bg-orange-"] {
+  background-color: #18181b !important;
+}
+
+#app-root [class*="border-red-"],
+#app-root [class*="border-rose-"],
+#app-root [class*="border-pink-"],
+#app-root [class*="border-fuchsia-"],
+#app-root [class*="border-purple-"],
+#app-root [class*="border-violet-"],
+#app-root [class*="border-blue-"],
+#app-root [class*="border-cyan-"],
+#app-root [class*="border-sky-"],
+#app-root [class*="border-emerald-"],
+#app-root [class*="border-green-"],
+#app-root [class*="border-teal-"],
+#app-root [class*="border-lime-"],
+#app-root [class*="border-yellow-"],
+#app-root [class*="border-amber-"],
+#app-root [class*="border-orange-"] {
+  border-color: #3f3f46 !important;
+}
+
+#app-root [class*="from-red-"],
+#app-root [class*="from-rose-"],
+#app-root [class*="from-pink-"],
+#app-root [class*="from-fuchsia-"],
+#app-root [class*="from-purple-"],
+#app-root [class*="from-violet-"],
+#app-root [class*="from-blue-"],
+#app-root [class*="from-cyan-"],
+#app-root [class*="from-sky-"],
+#app-root [class*="from-emerald-"],
+#app-root [class*="from-green-"],
+#app-root [class*="from-teal-"],
+#app-root [class*="from-lime-"],
+#app-root [class*="from-yellow-"],
+#app-root [class*="from-amber-"],
+#app-root [class*="from-orange-"] {
+  --tw-gradient-from: #ffffff var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position) !important;
+}
+
+#app-root [class*="via-red-"],
+#app-root [class*="via-rose-"],
+#app-root [class*="via-pink-"],
+#app-root [class*="via-fuchsia-"],
+#app-root [class*="via-purple-"],
+#app-root [class*="via-violet-"],
+#app-root [class*="via-blue-"],
+#app-root [class*="via-cyan-"],
+#app-root [class*="via-sky-"],
+#app-root [class*="via-emerald-"],
+#app-root [class*="via-green-"],
+#app-root [class*="via-teal-"],
+#app-root [class*="via-lime-"],
+#app-root [class*="via-yellow-"],
+#app-root [class*="via-amber-"],
+#app-root [class*="via-orange-"] {
+  --tw-gradient-via: #a1a1aa var(--tw-gradient-via-position) !important;
+}
+
+#app-root [class*="to-red-"],
+#app-root [class*="to-rose-"],
+#app-root [class*="to-pink-"],
+#app-root [class*="to-fuchsia-"],
+#app-root [class*="to-purple-"],
+#app-root [class*="to-violet-"],
+#app-root [class*="to-blue-"],
+#app-root [class*="to-cyan-"],
+#app-root [class*="to-sky-"],
+#app-root [class*="to-emerald-"],
+#app-root [class*="to-green-"],
+#app-root [class*="to-teal-"],
+#app-root [class*="to-lime-"],
+#app-root [class*="to-yellow-"],
+#app-root [class*="to-amber-"],
+#app-root [class*="to-orange-"] {
+  --tw-gradient-to: #52525b var(--tw-gradient-to-position) !important;
+}
+
+/* Custom scrollbar styling for immersive look */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-zinc-800);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-zinc-700);
+}

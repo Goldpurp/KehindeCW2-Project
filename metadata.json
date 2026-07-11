@@ -1,0 +1,6 @@
+{
+  "name": "KehindeCW2 Project",
+  "description": "KehindeCW2 Project is a school coursework video streaming app with creator uploads, consumer accounts, searchable video feeds, comments, ratings, notifications, and Azure-backed storage.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

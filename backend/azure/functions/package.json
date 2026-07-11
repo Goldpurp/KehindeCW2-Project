@@ -1,0 +1,23 @@
+{
+  "name": "kehindecw2-azure-functions",
+  "private": true,
+  "type": "module",
+  "main": "dist/functions/*.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "func start",
+    "lint": "tsc --noEmit"
+  },
+  "engines": {
+    "node": "22"
+  },
+  "dependencies": {
+    "@azure/cosmos": "^4.2.0",
+    "@azure/functions": "^4.7.0",
+    "@azure/storage-blob": "^12.26.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.8.0"
+  }
+}
