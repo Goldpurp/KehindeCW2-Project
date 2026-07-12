@@ -332,7 +332,6 @@ export default function CommentsDrawer({
                 loop
                 playsInline
                 className="h-full w-full object-contain"
-                referrerPolicy="no-referrer"
               />
               <VideoGestureLayer
                 videoRef={videoRef}

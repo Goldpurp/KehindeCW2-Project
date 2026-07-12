@@ -299,7 +299,6 @@ function FeedPostCard({
           playsInline
           className="w-full h-full object-cover cursor-pointer select-none"
           poster={video.thumbnailUrl}
-          referrerPolicy="no-referrer"
         />
 
         <VideoGestureLayer

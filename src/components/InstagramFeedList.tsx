@@ -284,7 +284,6 @@ function InstagramPostCard({
           playsInline
           poster={video.thumbnailUrl}
           className="h-full w-full cursor-pointer select-none object-cover"
-          referrerPolicy="no-referrer"
         />
 
         <VideoGestureLayer
