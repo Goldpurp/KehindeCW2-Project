@@ -70,3 +70,8 @@ After that script succeeds, set the frontend API base URL to the printed `https:
   - `http://127.0.0.1:3003`
   - `http://localhost:3003`
 - CORS preflight checks for signup and authenticated video requests from Render returned `200 OK`.
+- On 2026-07-12, the Function App was redeployed from commit `55b2df5`.
+  - Video views now count unique signed-in consumer users in `viewedBy`.
+  - Creator self-views are ignored.
+  - Legacy inflated `viewCount` values are no longer trusted by API responses unless backed by real `viewedBy` entries.
+  - The deployed `/api/videos` route returns `401 Sign in required` without an auth token, confirming the live API is enforcing authentication.
