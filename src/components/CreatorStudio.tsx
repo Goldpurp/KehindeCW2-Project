@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { db, auth, handleAzureError, OperationType, collection, doc, deleteDoc, updateDoc, getDocs } from '../lib/azure';
 import { Video, GENRES, AGE_RATINGS, AgeRating } from '../types';
+import DeleteConfirmModal from './DeleteConfirmModal';
 
 interface CreatorStudioProps {
   videos: Video[];
@@ -95,6 +96,8 @@ export default function CreatorStudio({ videos, onRefresh }: CreatorStudioProps)
   const [isSaving, setIsSaving] = useState(false);
   const [editError, setEditError] = useState('');
   const [successToast, setSuccessToast] = useState<string | null>(null);
+  const [pendingDeleteVideo, setPendingDeleteVideo] = useState<Video | null>(null);
+  const [isDeletingVideo, setIsDeletingVideo] = useState(false);
 
   // Handle comment count callback from child items
   const handleCommentCountLoaded = (videoId: string, count: number) => {
@@ -162,28 +165,31 @@ export default function CreatorStudio({ videos, onRefresh }: CreatorStudioProps)
   };
 
   // Delete a video
-  const handleDeleteVideo = async (videoId: string, title: string) => {
-    const confirmed = window.confirm(`Are you absolutely sure you want to permanently delete "${title}"? This cannot be undone.`);
-    if (!confirmed) return;
+  const handleDeleteVideo = async () => {
+    if (!pendingDeleteVideo || isDeletingVideo) return;
 
+    setIsDeletingVideo(true);
     try {
-      await deleteDoc(doc(db, 'videos', videoId));
+      await deleteDoc(doc(db, 'videos', pendingDeleteVideo.id));
       showToast("Video deleted permanently.");
       
       // Clear local state comment count for deleted video
       setCommentCounts(prev => {
         const copy = { ...prev };
-        delete copy[videoId];
+        delete copy[pendingDeleteVideo.id];
         return copy;
       });
+      setPendingDeleteVideo(null);
       onRefresh();
     } catch (err) {
       console.error("Error deleting video:", err);
       try {
-        handleAzureError(err, OperationType.DELETE, `videos/${videoId}`);
+        handleAzureError(err, OperationType.DELETE, `videos/${pendingDeleteVideo.id}`);
       } catch (formattedErr: any) {
         alert(formattedErr.message || "Failed to delete video. Permission denied.");
       }
+    } finally {
+      setIsDeletingVideo(false);
     }
   };
 
@@ -207,9 +213,9 @@ export default function CreatorStudio({ videos, onRefresh }: CreatorStudioProps)
       </AnimatePresence>
 
       {/* Metrics Panel Header */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4 md:gap-4">
         {/* Total Videos */}
-        <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl flex items-center gap-4 hover:border-zinc-700 transition">
+        <div className="flex min-w-0 items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-4 transition hover:border-zinc-700 sm:gap-4 sm:p-5">
           <div className="p-3 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
             <Film size={20} />
           </div>
@@ -220,7 +226,7 @@ export default function CreatorStudio({ videos, onRefresh }: CreatorStudioProps)
         </div>
 
         {/* Total Views */}
-        <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl flex items-center gap-4 hover:border-zinc-700 transition">
+        <div className="flex min-w-0 items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-4 transition hover:border-zinc-700 sm:gap-4 sm:p-5">
           <div className="p-3 rounded-xl bg-fuchsia-500/10 text-fuchsia-400 border border-fuchsia-500/20 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
             <Eye size={20} />
           </div>
@@ -231,7 +237,7 @@ export default function CreatorStudio({ videos, onRefresh }: CreatorStudioProps)
         </div>
 
         {/* Total Likes */}
-        <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl flex items-center gap-4 hover:border-zinc-700 transition">
+        <div className="flex min-w-0 items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-4 transition hover:border-zinc-700 sm:gap-4 sm:p-5">
           <div className="p-3 rounded-xl bg-pink-500/10 text-pink-400 border border-pink-500/20 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
             <Heart size={20} />
           </div>
@@ -242,7 +248,7 @@ export default function CreatorStudio({ videos, onRefresh }: CreatorStudioProps)
         </div>
 
         {/* Total Comments */}
-        <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl flex items-center gap-4 hover:border-zinc-700 transition">
+        <div className="flex min-w-0 items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-4 transition hover:border-zinc-700 sm:gap-4 sm:p-5">
           <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
             <MessageSquare size={20} />
           </div>
@@ -255,7 +261,7 @@ export default function CreatorStudio({ videos, onRefresh }: CreatorStudioProps)
 
       {/* Videos List and Management */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.5)]">
-        <div className="p-6 border-b border-zinc-800/80 flex items-center justify-between">
+        <div className="flex flex-col gap-3 border-b border-zinc-800/80 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div className="flex items-center gap-2">
             <Activity size={18} className="text-cyan-400" />
             <h3 className="text-base font-black uppercase tracking-wider text-zinc-100">My Video Portfolio</h3>
@@ -358,8 +364,8 @@ export default function CreatorStudio({ videos, onRefresh }: CreatorStudioProps)
                             <Edit3 size={14} />
                           </button>
                           <button
-                            onClick={() => handleDeleteVideo(video.id, video.title)}
-                            className="p-2 bg-zinc-950 hover:bg-red-950/40 border border-zinc-850 hover:border-red-500/30 text-zinc-400 hover:text-red-400 rounded-xl transition"
+                            onClick={() => setPendingDeleteVideo(video)}
+                            className="rounded-xl border border-[#7f1d1d] bg-[#7f1d1d]/25 p-2 text-[#f87171] transition hover:border-[#dc2626] hover:bg-[#dc2626] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fca5a5]"
                             title="Delete Video"
                           >
                             <Trash2 size={14} />
@@ -378,7 +384,7 @@ export default function CreatorStudio({ videos, onRefresh }: CreatorStudioProps)
       {/* Edit Metadata Modal */}
       <AnimatePresence>
         {editingVideo && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="safe-top safe-bottom fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -393,7 +399,7 @@ export default function CreatorStudio({ videos, onRefresh }: CreatorStudioProps)
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="relative w-full max-w-xl bg-zinc-900 border border-zinc-800 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.85)] z-10 text-white overflow-hidden"
+              className="relative z-10 flex h-dvh max-h-dvh w-full max-w-xl flex-col overflow-hidden bg-zinc-900 text-white shadow-[0_0_50px_rgba(0,0,0,0.85)] sm:h-auto sm:max-h-[calc(100dvh-2rem)] sm:rounded-xl sm:border sm:border-zinc-800"
             >
               {/* Header */}
               <div className="sticky top-0 bg-zinc-900/95 backdrop-blur border-b border-zinc-800 p-5 flex items-center justify-between">
@@ -415,7 +421,7 @@ export default function CreatorStudio({ videos, onRefresh }: CreatorStudioProps)
               </div>
 
               {/* Form Content */}
-              <form onSubmit={handleSaveMetadata} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+              <form onSubmit={handleSaveMetadata} className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-6">
                 {editError && (
                   <div className="p-3 bg-red-950/20 border border-red-800/30 text-red-400 text-xs font-semibold rounded-xl flex items-start gap-2.5">
                     <AlertCircle size={16} className="shrink-0 mt-0.5" />
@@ -431,7 +437,7 @@ export default function CreatorStudio({ videos, onRefresh }: CreatorStudioProps)
                     required
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:border-cyan-500 focus:outline-none text-xs text-white"
+                    className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-xl focus:border-cyan-500 focus:outline-none text-base sm:py-2.5 sm:text-sm text-white"
                   />
                 </div>
 
@@ -441,7 +447,7 @@ export default function CreatorStudio({ videos, onRefresh }: CreatorStudioProps)
                   <select
                     value={editGenre}
                     onChange={(e) => setEditGenre(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:border-cyan-500 focus:outline-none text-xs text-white"
+                    className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-xl focus:border-cyan-500 focus:outline-none text-base sm:py-2.5 sm:text-sm text-white"
                   >
                     {GENRES.map(g => (
                       <option key={g} value={g}>{g}</option>
@@ -450,7 +456,7 @@ export default function CreatorStudio({ videos, onRefresh }: CreatorStudioProps)
                 </div>
 
                 {/* Producer and Publisher */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-1">
                     <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider font-mono block">Producer</label>
                     <input
@@ -458,7 +464,7 @@ export default function CreatorStudio({ videos, onRefresh }: CreatorStudioProps)
                       required
                       value={editProducer}
                       onChange={(e) => setEditProducer(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:border-cyan-500 focus:outline-none text-xs text-white"
+                      className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-xl focus:border-cyan-500 focus:outline-none text-base sm:py-2.5 sm:text-sm text-white"
                     />
                   </div>
                   <div className="space-y-1">
@@ -468,7 +474,7 @@ export default function CreatorStudio({ videos, onRefresh }: CreatorStudioProps)
                       required
                       value={editPublisher}
                       onChange={(e) => setEditPublisher(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:border-cyan-500 focus:outline-none text-xs text-white"
+                      className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-xl focus:border-cyan-500 focus:outline-none text-base sm:py-2.5 sm:text-sm text-white"
                     />
                   </div>
                 </div>
@@ -481,14 +487,14 @@ export default function CreatorStudio({ videos, onRefresh }: CreatorStudioProps)
                     value={editThumbnail}
                     onChange={(e) => setEditThumbnail(e.target.value)}
                     placeholder="https://images.unsplash.com/..."
-                    className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:border-cyan-500 focus:outline-none text-xs text-white"
+                    className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-xl focus:border-cyan-500 focus:outline-none text-base sm:py-2.5 sm:text-sm text-white"
                   />
                 </div>
 
                 {/* Age Rating selector */}
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider font-mono block">Age Rating Recommendation</label>
-                  <div className="grid grid-cols-5 gap-2">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
                     {AGE_RATINGS.map(rating => (
                       <button
                         key={rating}
@@ -535,6 +541,14 @@ export default function CreatorStudio({ videos, onRefresh }: CreatorStudioProps)
           </div>
         )}
       </AnimatePresence>
+
+      <DeleteConfirmModal
+        isOpen={Boolean(pendingDeleteVideo)}
+        itemName={pendingDeleteVideo?.title || 'This video'}
+        isDeleting={isDeletingVideo}
+        onCancel={() => !isDeletingVideo && setPendingDeleteVideo(null)}
+        onConfirm={handleDeleteVideo}
+      />
 
     </div>
   );

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   ArrowLeft,
   BadgeCheck,
@@ -8,7 +7,6 @@ import {
   Heart,
   MessageCircle,
   Plus,
-  Settings,
   Star,
   Trash2,
   UploadCloud,
@@ -68,7 +66,6 @@ export default function ProfileScreen({
   onSelectVideo
 }: ProfileScreenProps) {
   const cleanUsername = username || 'kehindecw2_user';
-  const [profileNotice, setProfileNotice] = useState<string | null>(null);
   const initials = cleanUsername.slice(0, 2).toUpperCase();
   const isCreator = role === 'creator';
   const profileImageUrl = photoURL || videos.find((video) => video.creatorPhotoURL)?.creatorPhotoURL || '';
@@ -96,20 +93,9 @@ export default function ProfileScreen({
 
   const actionLabel = isOwnProfile ? 'Edit profile' : isFollowing ? 'Following' : 'Follow';
 
-  const showProfileNotice = (message: string) => {
-    setProfileNotice(message);
-    window.setTimeout(() => setProfileNotice(null), 2600);
-  };
-
   if (isOwnProfile && isCreator) {
     return (
-      <section className="w-full max-w-6xl mx-auto text-white" id="my-profile-container">
-        {profileNotice && (
-          <div className="fixed left-1/2 top-5 z-50 -translate-x-1/2 rounded-full border border-zinc-800 bg-zinc-950 px-4 py-2 text-xs font-bold text-zinc-100 shadow-2xl">
-            {profileNotice}
-          </div>
-        )}
-
+      <section className="mx-auto min-w-0 w-full max-w-6xl text-white" id="my-profile-container">
         <div className="border-b border-zinc-900 pb-6 md:pt-5">
           <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div className="flex min-w-0 items-center gap-4">
@@ -153,24 +139,24 @@ export default function ProfileScreen({
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex w-full flex-wrap gap-2 md:w-auto md:justify-end">
               {isEditingName ? (
                 <>
                   <input
                     value={editDisplayName}
                     onChange={(event) => onEditDisplayNameChange?.(event.target.value)}
-                    className="min-w-56 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm font-semibold text-white outline-none focus:border-white"
+                    className="w-full min-w-0 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2.5 text-base font-semibold text-white outline-none focus:border-white sm:w-auto sm:min-w-56 sm:text-sm"
                     autoFocus
                   />
                   <button
                     onClick={onSaveDisplayName}
-                    className="rounded-lg bg-zinc-100 px-4 py-2 text-sm font-bold text-black transition hover:bg-white"
+                    className="min-h-11 flex-1 rounded-lg bg-zinc-100 px-4 py-2 text-sm font-bold text-black transition hover:bg-white sm:flex-none"
                   >
                     Save
                   </button>
                   <button
                     onClick={onCancelEdit}
-                    className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-bold text-zinc-100 transition hover:bg-zinc-800"
+                    className="min-h-11 flex-1 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-bold text-zinc-100 transition hover:bg-zinc-800 sm:flex-none"
                   >
                     Cancel
                   </button>
@@ -179,23 +165,16 @@ export default function ProfileScreen({
                 <>
                   <button
                     onClick={onStartEdit}
-                    className="rounded-lg bg-[#262a2f] px-4 py-2 text-sm font-bold text-zinc-100 transition hover:bg-[#30343a]"
+                    className="min-h-11 flex-1 rounded-lg bg-[#262a2f] px-4 py-2 text-sm font-bold text-zinc-100 transition hover:bg-[#30343a] sm:flex-none"
                   >
                     Edit profile
                   </button>
                   <button
                     onClick={onOpenUpload}
-                    className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-bold text-black transition hover:bg-zinc-200"
+                    className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-bold text-black transition hover:bg-zinc-200 sm:flex-none"
                   >
                     <UploadCloud size={16} />
                     Upload video
-                  </button>
-                  <button
-                    onClick={() => showProfileNotice('Profile settings are already synced.')}
-                    className="rounded-lg bg-zinc-900 px-3 py-2 text-zinc-200 transition hover:bg-zinc-800"
-                    title="Settings"
-                  >
-                    <Settings size={18} />
                   </button>
                 </>
               )}
@@ -211,12 +190,12 @@ export default function ProfileScreen({
             ].map((item) => {
               const Icon = item.icon;
               return (
-                <div key={item.label} className="rounded-xl border border-zinc-900 bg-[#080a0d] p-4">
+                <div key={item.label} className="min-w-0 rounded-xl border border-zinc-900 bg-[#080a0d] p-3 sm:p-4">
                   <div className="mb-3 flex items-center justify-between text-zinc-500">
-                    <span className="text-xs font-bold uppercase">{item.label}</span>
+                    <span className="min-w-0 text-[10px] font-bold uppercase sm:text-xs">{item.label}</span>
                     <Icon size={16} />
                   </div>
-                  <p className="text-2xl font-black">{item.value}</p>
+                  <p className="break-words text-xl font-black sm:text-2xl">{item.value}</p>
                 </div>
               );
             })}
@@ -330,7 +309,7 @@ export default function ProfileScreen({
                     <button
                       type="button"
                       onClick={() => onDeleteVideo?.(video)}
-                      className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-950/35 px-3 py-2 text-xs font-black text-red-300 transition hover:bg-red-950"
+                      className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#7f1d1d]/35 px-3 py-2 text-xs font-black text-[#f87171] transition hover:bg-[#dc2626] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fca5a5]"
                     >
                       <Trash2 size={14} />
                       Delete video
@@ -346,12 +325,7 @@ export default function ProfileScreen({
   }
 
   return (
-    <section className="w-full max-w-[935px] mx-auto text-white" id={isOwnProfile ? 'my-profile-container' : 'creator-profile-container'}>
-      {profileNotice && (
-        <div className="fixed left-1/2 top-5 z-50 -translate-x-1/2 rounded-full border border-zinc-800 bg-zinc-950 px-4 py-2 text-xs font-bold text-zinc-100 shadow-2xl">
-          {profileNotice}
-        </div>
-      )}
+    <section className="mx-auto min-w-0 w-full max-w-[935px] text-white" id={isOwnProfile ? 'my-profile-container' : 'creator-profile-container'}>
       {onBack && (
         <button
           onClick={onBack}
@@ -364,8 +338,8 @@ export default function ProfileScreen({
 
       <div className="px-1 md:px-0">
         <div className="md:grid md:grid-cols-[220px_1fr] md:gap-8 md:pt-8 md:pb-10">
-          <div className="flex md:block items-center justify-between">
-            <div className="relative h-20 w-20 rounded-full border border-zinc-700 bg-zinc-950 md:h-[150px] md:w-[150px]">
+          <div className="flex items-center justify-between md:block">
+            <div className="relative h-[72px] w-[72px] shrink-0 rounded-full border border-zinc-700 bg-zinc-950 sm:h-20 sm:w-20 md:h-[150px] md:w-[150px]">
               <div className="w-full h-full rounded-full bg-[#09090b] border-4 border-black overflow-hidden flex items-center justify-center">
                 {profileImageUrl ? (
                   <img
@@ -392,11 +366,11 @@ export default function ProfileScreen({
               )}
             </div>
 
-            <div className="flex flex-1 justify-around md:hidden ml-5">
+            <div className="ml-3 flex min-w-0 flex-1 justify-around gap-1 md:hidden sm:ml-5">
               {stats.map((stat) => (
-                <div key={stat.label} className="text-center min-w-14">
+                <div key={stat.label} className="min-w-0 flex-1 text-center">
                   <p className="text-base font-bold leading-none">{stat.value}</p>
-                  <p className="text-[11px] text-zinc-300 mt-1">{stat.label}</p>
+                  <p className="mt-1 truncate text-[10px] text-zinc-300 sm:text-[11px]">{stat.label}</p>
                 </div>
               ))}
             </div>
@@ -406,13 +380,6 @@ export default function ProfileScreen({
             <div className="hidden md:flex items-center gap-4">
               <h1 className="text-2xl font-semibold tracking-tight">{cleanUsername}</h1>
               {isCreator && <BadgeCheck size={22} className="text-zinc-200" />}
-              <button
-                onClick={() => showProfileNotice('Use Edit profile to update your profile settings.')}
-                className="p-1 text-zinc-300 hover:text-white transition"
-                title="Settings"
-              >
-                <Settings size={22} />
-              </button>
             </div>
 
             <div className="hidden md:flex items-center gap-10 mt-6">
@@ -442,18 +409,18 @@ export default function ProfileScreen({
                   <input
                     value={editDisplayName}
                     onChange={(event) => onEditDisplayNameChange?.(event.target.value)}
-                    className="col-span-2 md:w-64 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm font-semibold text-white outline-none focus:border-white"
+                    className="col-span-2 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2.5 text-base font-semibold text-white outline-none focus:border-white md:w-64 md:text-sm"
                     autoFocus
                   />
                   <button
                     onClick={onSaveDisplayName}
-                    className="rounded-lg bg-zinc-100 px-4 py-2 text-sm font-bold text-black transition hover:bg-white md:min-w-40"
+                    className="min-h-11 rounded-lg bg-zinc-100 px-4 py-2 text-sm font-bold text-black transition hover:bg-white md:min-w-40"
                   >
                     Save
                   </button>
                   <button
                     onClick={onCancelEdit}
-                    className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-bold text-zinc-100 transition hover:bg-zinc-800 md:min-w-40"
+                    className="min-h-11 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-bold text-zinc-100 transition hover:bg-zinc-800 md:min-w-40"
                   >
                     Cancel
                   </button>
@@ -462,7 +429,7 @@ export default function ProfileScreen({
                 <>
                   <button
                     onClick={isOwnProfile ? onStartEdit : onFollow}
-                    className={`rounded-lg px-4 py-2 text-sm font-bold transition md:min-w-48 ${
+                    className={`min-h-11 rounded-lg px-4 py-2 text-sm font-bold transition md:min-w-48 ${
                       !isOwnProfile && !isFollowing
                         ? 'bg-white text-black hover:bg-zinc-200'
                         : 'bg-[#262a2f] text-zinc-100 hover:bg-[#30343a]'
@@ -505,7 +472,7 @@ export default function ProfileScreen({
           {engagementStats.map((item) => {
             const Icon = item.icon;
             return (
-              <div key={item.label} className="-mt-px flex h-14 items-center justify-center gap-2 border-t border-transparent text-xs font-bold text-zinc-300 md:text-sm">
+              <div key={item.label} className="-mt-px flex h-14 min-w-0 items-center justify-center gap-1 border-t border-transparent px-1 text-[11px] font-bold text-zinc-300 sm:gap-2 sm:text-xs md:text-sm">
                 <Icon size={17} className="text-white" />
                 <span className="font-black text-white">{item.value}</span>
                 <span className="hidden text-zinc-500 sm:inline">{item.label}</span>

@@ -126,6 +126,15 @@ export default function UploadModal({
     }
   }, [isOpen, prefilledVideoUrl, prefilledFileName, prefilledFile, creatorName]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
+
   const handleClose = () => {
     if (isSubmitting) return;
     onClose();
@@ -245,7 +254,7 @@ export default function UploadModal({
   };
 
   const renderPreview = (large = false) => (
-    <div className={`relative mx-auto aspect-[4/5] overflow-hidden bg-black ${large ? 'w-[min(100%,580px)] max-h-[calc(100vh-132px)]' : 'w-full max-w-[520px]'}`}>
+    <div className={`relative mx-auto aspect-[4/5] overflow-hidden bg-black ${large ? 'w-[min(100%,580px)] max-h-[calc(100dvh-132px)]' : 'w-full max-w-[520px]'}`}>
       {videoUrl ? (
         <video
           src={videoUrl}
@@ -272,7 +281,7 @@ export default function UploadModal({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 text-white backdrop-blur-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-0 text-white backdrop-blur-md sm:p-4">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -286,11 +295,11 @@ export default function UploadModal({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 18, scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 260, damping: 24 }}
-            className={`relative z-10 flex max-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-[4px] border border-zinc-800 bg-[#111318] shadow-2xl ${
-              step === 'details' ? 'h-[calc(100vh-2rem)] w-full max-w-[1120px]' : 'w-full max-w-[840px]'
+            className={`relative z-10 flex h-dvh max-h-dvh w-full flex-col overflow-hidden bg-[#111318] shadow-2xl sm:h-auto sm:max-h-[calc(100dvh-2rem)] sm:rounded-[4px] sm:border sm:border-zinc-800 ${
+              step === 'details' ? 'sm:h-[calc(100dvh-2rem)] sm:max-w-[1120px]' : 'sm:max-w-[840px]'
             }`}
           >
-            <header className="flex h-14 items-center justify-between border-b border-zinc-800 px-5">
+            <header className="safe-top flex min-h-14 shrink-0 items-center justify-between border-b border-zinc-800 px-3 sm:px-5">
               <button
                 type="button"
                 onClick={() => {
@@ -354,7 +363,7 @@ export default function UploadModal({
                 }}
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={handleDrop}
-                className={`flex min-h-[520px] flex-col items-center justify-center px-6 text-center transition ${
+                className={`flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-5 py-8 text-center transition sm:min-h-[520px] sm:px-6 ${
                   isDragging ? 'bg-zinc-800/70' : 'bg-[#24262b]'
                 }`}
               >
@@ -370,11 +379,11 @@ export default function UploadModal({
                   <Film size={58} strokeWidth={1.6} className="-ml-4" />
                 </div>
                 <p className="text-xl font-semibold">Drag videos here</p>
-                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <div className="mt-6 flex w-full max-w-xs flex-col gap-3 sm:w-auto sm:max-w-none sm:flex-row">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="rounded-lg bg-white px-5 py-2 text-sm font-bold text-black transition hover:bg-zinc-200"
+                    className="min-h-11 rounded-lg bg-white px-5 py-2 text-sm font-bold text-black transition hover:bg-zinc-200"
                   >
                     Select from computer
                   </button>
@@ -383,8 +392,8 @@ export default function UploadModal({
             )}
 
             {step === 'crop' && (
-              <div className="bg-black">
-                <div className="flex min-h-[520px] items-center justify-center px-4 py-6">
+              <div className="min-h-0 flex-1 overflow-y-auto bg-black">
+                <div className="flex min-h-full items-center justify-center px-3 py-4 sm:min-h-[520px] sm:px-4 sm:py-6">
                   {renderPreview()}
                 </div>
               </div>
@@ -392,11 +401,11 @@ export default function UploadModal({
 
             {step === 'details' && (
               <div className="grid min-h-0 flex-1 overflow-y-auto md:grid-cols-[minmax(0,1fr)_360px] md:overflow-hidden">
-                <div className="flex min-h-[380px] items-center justify-center overflow-hidden bg-black p-4">
+                <div className="flex h-[48dvh] min-h-[260px] items-center justify-center overflow-hidden bg-black p-3 sm:min-h-[340px] sm:p-4 md:h-auto md:min-h-[380px]">
                   {renderPreview(true)}
                 </div>
 
-                <aside className="flex min-h-0 flex-col overflow-hidden bg-[#202126]">
+                <aside className="flex min-h-0 flex-col overflow-visible bg-[#202126] md:overflow-hidden">
                   <div className="shrink-0 flex items-center gap-3 border-b border-zinc-800 px-5 py-4">
                     <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-zinc-900 text-xs font-black uppercase text-white">
                       {creatorPhotoURL ? (
@@ -408,7 +417,7 @@ export default function UploadModal({
                     <span className="text-sm font-extrabold">{creatorName}</span>
                   </div>
 
-                  <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4 pb-8">
+                  <div className="min-h-0 flex-1 overflow-visible overscroll-contain px-4 py-4 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-5 md:overflow-y-auto md:pb-8">
                     <label className="block rounded-2xl border border-zinc-800 bg-[#17191f] p-4">
                       <span className="mb-2 block text-xs font-extrabold text-zinc-300">Caption</span>
                       <textarea
@@ -416,7 +425,7 @@ export default function UploadModal({
                         value={caption}
                         onChange={(event) => setCaption(event.target.value)}
                         maxLength={2200}
-                        className="h-24 w-full resize-none border-0 bg-transparent text-sm leading-relaxed text-white outline-none placeholder:text-zinc-600"
+                        className="h-24 min-h-24 w-full resize-none border-0 bg-transparent text-base leading-relaxed text-white outline-none placeholder:text-zinc-600 md:text-sm"
                         placeholder="Write a caption..."
                       />
                       <span className="block text-right text-xs font-semibold text-zinc-500">{caption.length}/2,200</span>
@@ -429,7 +438,7 @@ export default function UploadModal({
                         <select
                           value={ageRating}
                           onChange={(event) => setAgeRating(event.target.value as AgeRating)}
-                          className="w-full rounded-xl border border-zinc-700 bg-[#1d1f24] px-3 py-2.5 text-sm outline-none transition focus:border-[#ffffff]"
+                          className="w-full rounded-xl border border-zinc-700 bg-[#1d1f24] px-3 py-3 text-base outline-none transition focus:border-[#ffffff] md:py-2.5 md:text-sm"
                         >
                           {AGE_RATINGS.map((item) => (
                             <option key={item} value={item}>{item}</option>
@@ -442,7 +451,7 @@ export default function UploadModal({
                         <select
                           value={genre}
                           onChange={(event) => setGenre(event.target.value)}
-                          className="w-full rounded-xl border border-zinc-700 bg-[#1d1f24] px-3 py-2.5 text-sm outline-none transition focus:border-[#ffffff]"
+                          className="w-full rounded-xl border border-zinc-700 bg-[#1d1f24] px-3 py-3 text-base outline-none transition focus:border-[#ffffff] md:py-2.5 md:text-sm"
                         >
                           {GENRES.map((item) => (
                             <option key={item} value={item}>{item}</option>

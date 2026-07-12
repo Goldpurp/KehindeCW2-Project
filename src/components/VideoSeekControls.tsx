@@ -22,7 +22,7 @@ export default function VideoSeekControls({
       <button
         type="button"
         onClick={onToggleMuted}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/70 text-white shadow-lg backdrop-blur-md transition hover:bg-black/90 active:scale-95"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-black/70 text-white shadow-lg backdrop-blur-md transition hover:bg-black/90 active:scale-95 sm:h-10 sm:w-10"
         aria-label={muted ? 'Unmute video' : 'Mute video'}
         title={muted ? 'Unmute video' : 'Mute video'}
       >

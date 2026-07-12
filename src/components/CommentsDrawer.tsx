@@ -29,6 +29,7 @@ import {
 import { Comment, Video } from '../types';
 import VideoGestureLayer from './VideoGestureLayer';
 import VideoSeekControls from './VideoSeekControls';
+import DeleteConfirmModal from './DeleteConfirmModal';
 
 interface CommentsDrawerProps {
   isOpen: boolean;
@@ -80,6 +81,8 @@ export default function CommentsDrawer({
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isDeletingPost, setIsDeletingPost] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const commentInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -134,6 +137,15 @@ export default function CommentsDrawer({
       node.pause();
     };
   }, [isOpen, video.id, video.videoUrl]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
 
   const handleAddComment = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -267,25 +279,27 @@ export default function CommentsDrawer({
   };
 
   const handleDeletePost = async () => {
-    if (!canDeletePost) return;
-    const shouldDelete = window.confirm(`Delete "${video.title}"?`);
-    if (!shouldDelete) return;
+    if (!canDeletePost || isDeletingPost) return;
 
+    setIsDeletingPost(true);
     try {
       await deleteDoc(doc(db, 'videos', video.id));
+      setIsDeleteConfirmOpen(false);
       onCommentCountUpdate?.();
       onClose();
     } catch (err) {
       console.error("Error deleting video:", err);
       handleAzureError(err, OperationType.DELETE, `videos/${video.id}`);
       showNotice('Could not delete video.');
+    } finally {
+      setIsDeletingPost(false);
     }
   };
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#050505]/95 p-4 text-white">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#050505]/95 p-0 text-white md:p-4">
           {notice && (
             <div className="absolute left-1/2 top-5 z-30 -translate-x-1/2 rounded-full border border-zinc-700 bg-zinc-950 px-4 py-2 text-xs font-bold text-white shadow-2xl">
               {notice}
@@ -293,7 +307,7 @@ export default function CommentsDrawer({
           )}
           <button
             onClick={onClose}
-            className="absolute right-5 top-5 z-20 flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-700 text-zinc-200 transition hover:border-zinc-400 hover:text-white"
+            className="absolute right-3 top-[calc(0.5rem+env(safe-area-inset-top))] z-30 flex h-11 w-11 items-center justify-center rounded-lg text-zinc-200 transition hover:bg-zinc-800 hover:text-white md:right-5 md:top-5 md:border md:border-zinc-700"
             aria-label="Close comments"
           >
             <X size={28} />
@@ -304,7 +318,7 @@ export default function CommentsDrawer({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 16 }}
             transition={{ type: 'spring', stiffness: 220, damping: 24 }}
-            className="grid h-[88vh] w-full max-w-[1180px] overflow-hidden rounded-[4px] border border-zinc-800 bg-[#202126] shadow-2xl md:grid-cols-[1fr_430px]"
+            className="grid h-dvh max-h-dvh w-full max-w-[1180px] overflow-hidden bg-[#202126] shadow-2xl md:h-[88dvh] md:max-h-[88dvh] md:grid-cols-[minmax(0,1fr)_minmax(340px,430px)] md:rounded-[4px] md:border md:border-zinc-800"
             id="comments-drawer-panel"
           >
             <div className="relative hidden items-center justify-center bg-black md:flex">
@@ -333,8 +347,8 @@ export default function CommentsDrawer({
               />
             </div>
 
-            <section className="flex min-h-0 flex-col bg-[#202126]">
-              <header className="relative flex items-center justify-between border-b border-zinc-800 px-4 py-4">
+            <section className="flex min-h-0 min-w-0 flex-col bg-[#202126] pt-[env(safe-area-inset-top)] md:pt-0">
+              <header className="relative flex min-h-16 items-center justify-between border-b border-zinc-800 py-3 pl-4 pr-16 md:px-4 md:py-4">
                 <div className="flex min-w-0 items-center gap-3 text-left">
                   {renderAvatar(video.creatorName, creatorPhotoURL, 'h-11 w-11', 'text-[11px]')}
                   <span className="min-w-0">
@@ -393,9 +407,9 @@ export default function CommentsDrawer({
                         <button
                           onClick={() => {
                             setIsOptionsOpen(false);
-                            void handleDeletePost();
+                            setIsDeleteConfirmOpen(true);
                           }}
-                          className="block w-full px-4 py-3 text-left text-red-300 transition hover:bg-zinc-900"
+                          className="block w-full px-4 py-3 text-left font-bold text-[#f87171] transition hover:bg-[#7f1d1d]/45 hover:text-white"
                         >
                           Delete video
                         </button>
@@ -453,7 +467,7 @@ export default function CommentsDrawer({
                               {isUserAllowedToDelete(comment) && (
                                 <button
                                   onClick={() => handleDeleteComment(comment.id)}
-                                  className="opacity-0 transition hover:text-white group-hover:opacity-100"
+                                  className="rounded p-1 text-[#f87171] opacity-70 transition hover:bg-[#dc2626] hover:text-white group-hover:opacity-100"
                                   title="Delete comment"
                                 >
                                   <Trash2 size={12} />
@@ -476,7 +490,7 @@ export default function CommentsDrawer({
                 )}
               </div>
 
-              <footer className="border-t border-zinc-800 bg-[#202126]">
+              <footer className="shrink-0 border-t border-zinc-800 bg-[#202126] pb-[env(safe-area-inset-bottom)]">
                 <div className="flex items-center justify-between px-4 py-3">
                   <div className="flex items-center gap-4">
                     <button
@@ -518,7 +532,7 @@ export default function CommentsDrawer({
                   <p className="mt-1 text-xs text-zinc-500">{getRelativeTime(video.createdAt)}</p>
                 </div>
 
-                <form onSubmit={handleAddComment} className="flex items-center gap-3 border-t border-zinc-800 px-4 py-3">
+                <form onSubmit={handleAddComment} className="flex min-h-14 items-center gap-2 border-t border-zinc-800 px-3 py-2 sm:gap-3 sm:px-4 sm:py-3">
                   <Smile size={24} className="shrink-0 text-zinc-200" />
                   <input
                     ref={commentInputRef}
@@ -528,13 +542,13 @@ export default function CommentsDrawer({
                     value={newComment}
                     onChange={(event) => setNewComment(event.target.value)}
                     maxLength={1000}
-                    className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-zinc-500 disabled:cursor-not-allowed"
+                    className="min-w-0 flex-1 bg-transparent text-base md:text-sm text-white outline-none placeholder:text-zinc-500 disabled:cursor-not-allowed"
                     id="input-comment-text"
                   />
                   <button
                     type="submit"
                     disabled={isSubmitting || !newComment.trim() || !auth.currentUser}
-                    className="text-sm font-bold text-sky-500 transition hover:text-sky-300 disabled:opacity-40"
+                    className="min-h-11 shrink-0 px-1 text-sm font-bold text-sky-500 transition hover:text-sky-300 disabled:opacity-40"
                     id="btn-send-comment"
                   >
                     Post
@@ -543,6 +557,14 @@ export default function CommentsDrawer({
               </footer>
             </section>
           </motion.div>
+
+          <DeleteConfirmModal
+            isOpen={isDeleteConfirmOpen}
+            itemName={video.title}
+            isDeleting={isDeletingPost}
+            onCancel={() => !isDeletingPost && setIsDeleteConfirmOpen(false)}
+            onConfirm={handleDeletePost}
+          />
         </div>
       )}
     </AnimatePresence>

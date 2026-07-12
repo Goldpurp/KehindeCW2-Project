@@ -50,7 +50,7 @@ export default function RatingStars({ video, onRatingUpdate }: RatingStarsProps)
   };
 
   return (
-    <div className="flex items-center gap-2 rounded-full border border-zinc-800/70 bg-black/35 px-2.5 py-1 backdrop-blur-md" id="rating-stars-container">
+    <div className="flex max-w-full items-center gap-1.5 rounded-full border border-zinc-800/70 bg-black/35 px-2 py-1 backdrop-blur-md sm:gap-2 sm:px-2.5" id="rating-stars-container">
       <span className="text-[11px] font-black text-amber-300 font-mono">
         {video.averageRating ? video.averageRating.toFixed(1) : '0.0'}
       </span>
@@ -65,7 +65,7 @@ export default function RatingStars({ video, onRatingUpdate }: RatingStarsProps)
               onMouseEnter={() => canRate && setHoverRating(star)}
               onMouseLeave={() => canRate && setHoverRating(null)}
               onClick={() => handleRate(star)}
-              className={`p-0.5 transition-transform hover:scale-125 focus:outline-none ${
+              className={`flex h-7 w-5 items-center justify-center transition-transform hover:scale-110 focus:outline-none ${
                 !canRate ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
               }`}
               title={
@@ -87,7 +87,7 @@ export default function RatingStars({ video, onRatingUpdate }: RatingStarsProps)
         })}
       </div>
 
-      <span className="text-[10px] font-bold text-zinc-400">
+      <span className="whitespace-nowrap text-[10px] font-bold text-zinc-400">
         {ratingCount} {ratingCount === 1 ? 'rating' : 'ratings'}
       </span>
     </div>

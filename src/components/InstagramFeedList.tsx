@@ -35,6 +35,7 @@ import CommentsDrawer from './CommentsDrawer';
 import RatingStars from './RatingStars';
 import VideoGestureLayer from './VideoGestureLayer';
 import VideoSeekControls from './VideoSeekControls';
+import DeleteConfirmModal from './DeleteConfirmModal';
 
 interface InstagramFeedListProps {
   videos: Video[];
@@ -109,6 +110,8 @@ function InstagramPostCard({
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [isCaptionExpanded, setIsCaptionExpanded] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const containerRef = useRef<HTMLElement | null>(null);
@@ -243,18 +246,20 @@ function InstagramPostCard({
   };
 
   const handleDeletePost = async () => {
-    if (!canDeleteVideo) return;
-    const shouldDelete = window.confirm(`Delete "${video.title}"?`);
-    if (!shouldDelete) return;
+    if (!canDeleteVideo || isDeleting) return;
 
+    setIsDeleting(true);
     try {
       await deleteDoc(doc(db, 'videos', video.id));
       setIsOptionsOpen(false);
+      setIsDeleteConfirmOpen(false);
       onRefresh();
       onShowToast?.('Video deleted.');
     } catch (err) {
       console.error("Error deleting video:", err);
       onShowToast?.('Could not delete video.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -265,7 +270,7 @@ function InstagramPostCard({
   return (
     <article
       ref={containerRef}
-      className="w-full max-w-[560px] mx-auto pb-11 text-white"
+      className="mx-auto w-full max-w-[560px] pb-8 text-white sm:pb-11"
       id={`instagram-post-${video.id}`}
     >
       <div className="relative aspect-[4/5] overflow-hidden rounded-[4px] border border-zinc-800 bg-black">
@@ -288,10 +293,10 @@ function InstagramPostCard({
           className="z-[8]"
         />
 
-        <div className="absolute left-0 right-0 top-0 z-10 flex items-start justify-between bg-gradient-to-b from-black/75 via-black/25 to-transparent p-3">
+        <div className="absolute left-0 right-0 top-0 z-10 flex items-start justify-between gap-2 bg-gradient-to-b from-black/75 via-black/25 to-transparent p-2.5 sm:p-3">
           <button
             onClick={() => onSelectCreator?.(video.creatorName)}
-            className="flex min-w-0 items-center gap-2 text-left"
+            className="flex min-w-0 max-w-[calc(100%-2.5rem)] items-center gap-2 text-left"
           >
             <span className="h-9 w-9 shrink-0 rounded-full bg-gradient-to-tr from-yellow-400 via-fuchsia-500 to-purple-600 p-[2px]">
               <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-black bg-zinc-950 text-[10px] font-black text-white">
@@ -303,8 +308,8 @@ function InstagramPostCard({
               </span>
             </span>
             <span className="min-w-0">
-              <span className="flex items-center gap-1 text-sm font-extrabold leading-none text-white">
-                {video.creatorName}
+              <span className="flex min-w-0 items-center gap-1 text-sm font-extrabold leading-none text-white">
+                <span className="min-w-0 truncate">{video.creatorName}</span>
                 <span className="text-xs text-sky-400">●</span>
                 <span className="text-xs font-semibold text-zinc-300">· {getRelativeTime(video.createdAt)}</span>
               </span>
@@ -356,8 +361,11 @@ function InstagramPostCard({
                 </button>
                 {canDeleteVideo && (
                   <button
-                    onClick={handleDeletePost}
-                    className="block w-full px-4 py-3 text-left text-red-300 transition hover:bg-zinc-900"
+                    onClick={() => {
+                      setIsOptionsOpen(false);
+                      setIsDeleteConfirmOpen(true);
+                    }}
+                    className="block w-full px-4 py-3 text-left font-bold text-[#f87171] transition hover:bg-[#7f1d1d]/45 hover:text-white"
                   >
                     Delete video
                   </button>
@@ -396,7 +404,7 @@ function InstagramPostCard({
             <button
               onClick={toggleLike}
               disabled={!currentUserId}
-              className={`transition active:scale-90 ${isLiked ? 'text-red-500' : 'hover:text-zinc-300'}`}
+            className={`flex h-11 w-11 items-center justify-start transition active:scale-90 ${isLiked ? 'text-red-500' : 'hover:text-zinc-300'}`}
               aria-label="Like video"
             >
               <Heart size={29} className={isLiked ? 'fill-current' : ''} strokeWidth={2} />
@@ -404,7 +412,7 @@ function InstagramPostCard({
 
             <button
               onClick={() => setIsCommentsOpen(true)}
-              className="transition hover:text-zinc-300 active:scale-90"
+              className="flex h-11 w-11 items-center justify-center transition hover:text-zinc-300 active:scale-90"
               aria-label="Open comments"
             >
               <MessageSquare size={28} strokeWidth={2} />
@@ -412,7 +420,7 @@ function InstagramPostCard({
 
             <button
               onClick={handleShare}
-              className="transition hover:text-zinc-300 active:scale-90"
+              className="flex h-11 w-11 items-center justify-center transition hover:text-zinc-300 active:scale-90"
               aria-label="Share video"
             >
               <Send size={27} strokeWidth={2} />
@@ -421,7 +429,7 @@ function InstagramPostCard({
 
           <button
             onClick={() => setIsBookmarked(!isBookmarked)}
-            className={`transition hover:text-zinc-300 active:scale-90 ${isBookmarked ? 'text-white' : 'text-white'}`}
+            className={`flex h-11 w-11 items-center justify-end transition hover:text-zinc-300 active:scale-90 ${isBookmarked ? 'text-white' : 'text-white'}`}
             aria-label="Save video"
           >
             <Bookmark size={28} className={isBookmarked ? 'fill-current' : ''} strokeWidth={2} />
@@ -450,7 +458,7 @@ function InstagramPostCard({
           )}
         </div>
 
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2.5">
           <button
             onClick={() => setIsCommentsOpen(true)}
             className="text-sm text-zinc-500 transition hover:text-zinc-300"
@@ -467,6 +475,14 @@ function InstagramPostCard({
         profilePhotoByUserId={profilePhotoByUserId}
         onClose={() => setIsCommentsOpen(false)}
         onCommentCountUpdate={onRefresh}
+      />
+
+      <DeleteConfirmModal
+        isOpen={isDeleteConfirmOpen}
+        itemName={video.title}
+        isDeleting={isDeleting}
+        onCancel={() => !isDeleting && setIsDeleteConfirmOpen(false)}
+        onConfirm={handleDeletePost}
       />
     </article>
   );
@@ -660,7 +676,7 @@ export default function InstagramFeedList({
 
   if (videos.length === 0) {
     return (
-      <div className="mx-auto flex min-h-[46vh] w-full max-w-[560px] flex-col items-center justify-center rounded-[4px] border border-zinc-900 bg-black p-8 text-center text-zinc-500">
+      <div className="mx-auto flex min-h-[46dvh] w-full max-w-[560px] flex-col items-center justify-center rounded-[4px] border border-zinc-900 bg-black p-5 text-center text-zinc-500 sm:p-8">
         <FolderOpen size={42} className="mb-3 text-zinc-800" />
         <h3 className="mb-1 text-sm font-bold text-white">No posts yet</h3>
         <p className="mb-5 max-w-xs text-xs text-zinc-500">Latest uploaded videos will appear here.</p>

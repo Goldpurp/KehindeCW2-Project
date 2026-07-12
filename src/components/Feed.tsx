@@ -244,7 +244,7 @@ function FeedPostCard({
   return (
     <motion.div 
       data-video-id={video.id}
-      className="snap-start w-full h-full shrink-0 flex flex-col justify-between overflow-hidden bg-[#050505] p-4 border-b border-zinc-900/60"
+      className="snap-start flex h-full w-full shrink-0 flex-col justify-between overflow-hidden border-b border-zinc-900/60 bg-[#050505] p-3 sm:p-4"
       id={`feed-post-${video.id}`}
       initial={{ opacity: 0.85, y: 30, scale: 0.98 }}
       animate={isCurrentlyVisible ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0.5, y: -20, scale: 0.96 }}
@@ -257,7 +257,7 @@ function FeedPostCard({
     >
       {/* 1. Header with Creator Info */}
       <div className="h-12 flex items-center justify-between shrink-0 pb-2">
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           {/* Creator Avatar with Olive Green border */}
           <div className="w-9 h-9 rounded-full p-[2px] bg-gradient-to-tr from-[#3f3f46] to-[#d4d4d8]">
             <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-black bg-zinc-950 text-[10px] font-black tracking-tighter text-[#f4f4f5]">
@@ -268,10 +268,10 @@ function FeedPostCard({
               )}
             </div>
           </div>
-          <div>
+          <div className="min-w-0">
             <span 
               onClick={() => onSelectCreator?.(video.creatorName)}
-              className="text-xs font-bold text-[#f4f4f5] hover:underline cursor-pointer transition active:text-white"
+              className="block max-w-[160px] truncate text-xs font-bold text-[#f4f4f5] hover:underline cursor-pointer transition active:text-white sm:max-w-[240px]"
             >
               @{video.creatorName}
             </span>
@@ -358,7 +358,7 @@ function FeedPostCard({
       <div className="mt-3 shrink-0 space-y-2.5">
         
         {/* Engagement row */}
-        <div className="flex items-center justify-between border-b border-zinc-900/40 pb-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-900/40 pb-2.5">
           {/* Left Side: Standard post action icons */}
           <div className="flex items-center gap-4 text-zinc-300">
             {/* Like */}
@@ -408,7 +408,7 @@ function FeedPostCard({
         <div className="space-y-1.5 text-left">
           {/* Quick Reactions bar in place of views section */}
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2 px-2 py-1 bg-[#111111] border border-[#3f3f46]/30 rounded-full shadow-inner w-max">
+            <div className="flex w-max items-center gap-1 bg-[#111111] border border-[#3f3f46]/30 rounded-full px-1.5 py-1 shadow-inner sm:gap-2 sm:px-2">
               <span className="text-[9px] font-mono font-bold text-[#f4f4f5]/60 px-1 uppercase">React:</span>
               <button
                 onClick={() => triggerReaction('heart')}
@@ -791,7 +791,7 @@ export default function Feed({
 
   return (
     <div 
-      className="relative w-full h-[80vh] md:h-[82vh] max-h-[82vh] max-w-full md:max-w-lg mx-auto bg-black rounded-none md:rounded-3xl overflow-hidden shadow-none md:shadow-[0_0_50px_rgba(0,0,0,0.9)] border-0 md:border md:border-zinc-900/60 flex" 
+      className="relative mx-auto flex h-[calc(100dvh-9rem)] min-h-[360px] w-full max-w-full overflow-hidden rounded-none border-0 bg-black shadow-none md:h-[82dvh] md:min-h-[520px] md:max-h-[82dvh] md:max-w-lg md:rounded-3xl md:border md:border-zinc-900/60 md:shadow-[0_0_50px_rgba(0,0,0,0.9)]"
       id="feed-root-container"
     >
       {/* Back to Dashboard Button */}

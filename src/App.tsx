@@ -41,6 +41,7 @@ import UploadModal from './components/UploadModal';
 import InstagramFeedList from './components/InstagramFeedList';
 import ProfileScreen from './components/ProfileScreen';
 import CommentsDrawer from './components/CommentsDrawer';
+import DeleteConfirmModal from './components/DeleteConfirmModal';
 
 interface Sug {
   userId: string;
@@ -144,6 +145,8 @@ export default function App() {
   const [videosLoading, setVideosLoading] = useState(true);
   const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
   const [selectedPostVideo, setSelectedPostVideo] = useState<Video | null>(null);
+  const [pendingDeleteVideo, setPendingDeleteVideo] = useState<Video | null>(null);
+  const [isDeletingVideo, setIsDeletingVideo] = useState(false);
 
   // Profile Edit states
   const [editDisplayName, setEditDisplayName] = useState('');
@@ -635,25 +638,32 @@ export default function App() {
     setSelectedPostVideo(freshVideo);
   };
 
-  const handleDeleteVideo = async (video: Video) => {
+  const handleDeleteVideo = (video: Video) => {
     if (!isCreator || video.creatorId !== user?.uid) {
       showToast("You can only delete your own uploads.");
       return;
     }
 
-    const shouldDelete = window.confirm(`Delete "${video.title}"?`);
-    if (!shouldDelete) return;
+    setPendingDeleteVideo(video);
+  };
 
+  const confirmDeleteVideo = async () => {
+    if (!pendingDeleteVideo || isDeletingVideo) return;
+
+    setIsDeletingVideo(true);
     try {
-      await deleteDoc(doc(db, 'videos', video.id));
-      if (selectedPostVideo?.id === video.id) {
+      await deleteDoc(doc(db, 'videos', pendingDeleteVideo.id));
+      if (selectedPostVideo?.id === pendingDeleteVideo.id) {
         setSelectedPostVideo(null);
       }
+      setPendingDeleteVideo(null);
       showToast("Video deleted.");
     } catch (error) {
       console.error("Error deleting video:", error);
-      handleAzureError(error, OperationType.DELETE, `videos/${video.id}`);
+      handleAzureError(error, OperationType.DELETE, `videos/${pendingDeleteVideo.id}`);
       showToast("Could not delete video.");
+    } finally {
+      setIsDeletingVideo(false);
     }
   };
 
@@ -759,13 +769,13 @@ export default function App() {
     const genreOptions = ['All', ...GENRES];
 
     return (
-      <section className="w-full max-w-[920px] text-white" id="search-page">
+      <section className="min-w-0 w-full max-w-[920px] text-white" id="search-page">
         <div className="mb-6">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Search</p>
           <h2 className="mt-1 text-2xl font-black tracking-tight">Uploaded videos</h2>
         </div>
 
-        <div className="sticky top-0 z-20 -mx-1 mb-5 bg-black/90 px-1 py-3 backdrop-blur-md md:top-0">
+        <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 -mx-1 mb-5 bg-black/90 px-1 py-3 backdrop-blur-md md:top-0">
           <div className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3">
             <Search size={18} className="shrink-0 text-zinc-500" />
             <input
@@ -884,7 +894,7 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => handleDeleteVideo(video)}
-                        className="rounded-lg bg-red-950/40 px-3 py-2 text-red-300 transition hover:bg-red-950"
+                        className="flex min-h-10 min-w-10 items-center justify-center rounded-lg bg-[#7f1d1d]/35 px-3 py-2 text-[#f87171] transition hover:bg-[#dc2626] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fca5a5]"
                         aria-label={`Delete ${video.title}`}
                         title="Delete video"
                       >
@@ -1016,17 +1026,17 @@ export default function App() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsActivityOpen(false)}
-              className="fixed inset-0 z-[55] bg-black/35 lg:hidden"
+              className="fixed inset-0 z-[55] bg-black/55"
             />
             <motion.aside
               initial={{ x: -28, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -28, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 260, damping: 30 }}
-              className="fixed bottom-0 left-0 top-0 z-[60] flex w-full max-w-[500px] flex-col border-r border-zinc-900 bg-[#050505] px-8 py-8 text-white shadow-2xl md:left-[244px]"
+              className="safe-top safe-bottom fixed bottom-0 left-0 top-0 z-[60] flex w-full max-w-[500px] flex-col border-r border-zinc-900 bg-[#050505] px-4 py-5 text-white shadow-2xl sm:px-6 sm:py-7 md:left-[88px] xl:left-[232px]"
             >
-              <div className="mb-7 flex items-center justify-between">
-                <h2 className="text-3xl font-black tracking-tight">Notifications</h2>
+              <div className="mb-5 flex items-center justify-between gap-4 sm:mb-7">
+                <h2 className="min-w-0 truncate text-2xl font-black tracking-tight sm:text-3xl">Notifications</h2>
                 <button
                   onClick={() => setIsActivityOpen(false)}
                   className="rounded-lg p-1 text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
@@ -1036,12 +1046,12 @@ export default function App() {
                 </button>
               </div>
 
-              <div className="mb-6 flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+              <div className="mb-5 flex gap-2 overflow-x-auto pb-2 scrollbar-none sm:mb-6">
                 {filterOptions.map((option) => (
                   <button
                     key={option.key}
                     onClick={() => setActivityFilter(option.key)}
-                    className={`shrink-0 rounded-full border px-5 py-2 text-sm font-extrabold transition ${
+                    className={`min-h-11 shrink-0 rounded-full border px-4 py-2 text-sm font-extrabold transition sm:px-5 ${
                       activityFilter === option.key
                         ? 'border-zinc-800 bg-zinc-800 text-white'
                         : 'border-zinc-700 bg-transparent text-zinc-200 hover:border-zinc-500'
@@ -1090,8 +1100,19 @@ export default function App() {
     setIsActivityOpen(false);
   };
 
+  useEffect(() => {
+    const shouldLockPage = isActivityOpen || isUploadOpen || Boolean(selectedPostVideo) || Boolean(pendingDeleteVideo) || isLogoutConfirmOpen;
+    if (!shouldLockPage) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isActivityOpen, isLogoutConfirmOpen, isUploadOpen, pendingDeleteVideo, selectedPostVideo]);
+
   return (
-    <div className="min-h-screen bg-black text-zinc-150 flex flex-col font-sans" id="app-root">
+    <div className="min-h-dvh min-w-0 bg-black text-zinc-150 flex flex-col font-sans" id="app-root">
 
       {/* Toast Notice */}
       <AnimatePresence>
@@ -1100,7 +1121,7 @@ export default function App() {
             initial={{ opacity: 0, y: 30, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.9 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 bg-[#18181b] text-[#f4f4f5] border border-[#3f3f46] text-xs font-bold rounded-2xl shadow-2xl flex items-center gap-2.5 max-w-sm"
+            className="app-toast fixed left-1/2 z-[80] -translate-x-1/2 px-4 py-3 bg-[#18181b] text-[#f4f4f5] border border-[#3f3f46] text-xs font-bold rounded-xl shadow-2xl flex items-center justify-center gap-2.5 text-center"
           >
             <CheckCircle2 size={16} className="text-[#d4d4d8]" />
             <span>{toastMessage}</span>
@@ -1112,19 +1133,15 @@ export default function App() {
       {/* 1. UNAUTHENTICATED: EMAIL AND PASSWORD LOGIN */}
       {/* ========================================== */}
       {!user && (
-        <div className="flex-1 flex flex-col md:flex-row items-center justify-center min-h-screen bg-black relative p-6">
-          {/* Ambient olive visual decorations */}
-          <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-[#3f3f46]/10 blur-3xl rounded-full" />
-          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-[#d4d4d8]/5 blur-3xl rounded-full" />
-
-          <div className="relative w-full max-w-md bg-[#09090b] border border-[#27272a] p-8 md:p-10 rounded-3xl shadow-[0_0_60px_rgba(0,0,0,0.9)] text-center space-y-6">
+        <div className="safe-top safe-bottom flex min-h-dvh flex-1 flex-col items-center justify-center overflow-y-auto bg-black relative px-3 py-4 sm:p-6">
+          <div className="relative w-full max-w-md bg-[#09090b] border border-[#27272a] p-5 sm:p-8 md:p-10 rounded-xl shadow-[0_0_60px_rgba(0,0,0,0.9)] text-center space-y-5 sm:space-y-6">
             
             {/* Logo area */}
             <div className="flex flex-col items-center space-y-2">
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#3f3f46] to-[#d4d4d8] flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.3)]">
                 <Crown size={28} className="text-[#f4f4f5]" />
               </div>
-              <h2 className="font-display font-black text-3xl tracking-tight text-white uppercase mt-2">
+              <h2 className="font-display break-words font-black text-2xl sm:text-3xl tracking-tight text-white uppercase mt-2">
                 KehindeCW2 Project
               </h2>
             </div>
@@ -1153,7 +1170,8 @@ export default function App() {
                         placeholder="Your handle"
                         value={authName}
                         onChange={(e) => setAuthName(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-black border border-[#3f3f46] rounded-xl focus:border-[#d4d4d8] focus:outline-none text-xs text-white placeholder-zinc-700 transition"
+                        autoComplete="nickname"
+                        className="w-full px-4 py-3 bg-black border border-[#3f3f46] rounded-xl focus:border-[#d4d4d8] focus:outline-none text-base sm:text-sm text-white placeholder-zinc-700 transition"
                       />
                     </div>
 
@@ -1198,7 +1216,8 @@ export default function App() {
                     placeholder="you@example.com"
                     value={authEmail}
                     onChange={(e) => setAuthEmail(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-black border border-[#3f3f46] rounded-xl focus:border-[#d4d4d8] focus:outline-none text-xs text-white placeholder-zinc-700 transition"
+                    autoComplete="email"
+                    className="w-full px-4 py-3 bg-black border border-[#3f3f46] rounded-xl focus:border-[#d4d4d8] focus:outline-none text-base sm:text-sm text-white placeholder-zinc-700 transition"
                   />
                 </div>
 
@@ -1210,7 +1229,8 @@ export default function App() {
                     placeholder="Password"
                     value={authPassword}
                     onChange={(e) => setAuthPassword(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-black border border-[#3f3f46] rounded-xl focus:border-[#d4d4d8] focus:outline-none text-xs text-white placeholder-zinc-700 transition"
+                    autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'}
+                    className="w-full px-4 py-3 bg-black border border-[#3f3f46] rounded-xl focus:border-[#d4d4d8] focus:outline-none text-base sm:text-sm text-white placeholder-zinc-700 transition"
                   />
                 </div>
 
@@ -1270,14 +1290,14 @@ export default function App() {
       {/* 2. AUTHENTICATED CORE LAYOUT */}
       {/* ========================================== */}
       {user && (
-        <div className="flex-1 flex flex-col md:flex-row min-h-screen bg-black">
+        <div className="flex min-h-dvh min-w-0 flex-1 flex-col bg-black md:flex-row">
           {renderActivityPanel()}
           
           {/* ========================================== */}
           {/* DESKTOP SIDEBAR (LEFT) */}
           {/* ========================================== */}
-          <aside className="sticky top-0 hidden h-screen w-[232px] shrink-0 flex-col border-r border-zinc-900 bg-[#080a0d] px-5 py-7 md:flex">
-            <nav className="mt-24 space-y-2" aria-label="Primary">
+          <aside className="sticky top-0 hidden h-dvh w-[88px] shrink-0 flex-col border-r border-zinc-900 bg-[#080a0d] px-3 py-5 md:flex xl:w-[232px] xl:px-5 xl:py-7">
+            <nav className="mt-16 space-y-2 xl:mt-24" aria-label="Primary">
               {[
                 {
                   key: 'home',
@@ -1341,7 +1361,7 @@ export default function App() {
                     key={item.key}
                     type="button"
                     onClick={item.onClick}
-                    className={`group flex h-14 w-full items-center gap-4 rounded-xl px-4 text-left text-white transition ${
+                    className={`group flex h-14 w-full items-center justify-center gap-4 rounded-xl px-2 text-left text-white transition xl:justify-start xl:px-4 ${
                       item.active ? 'bg-[#22262b]' : 'hover:bg-[#13161a]'
                     }`}
                     aria-label={item.label}
@@ -1367,7 +1387,7 @@ export default function App() {
                         <span className="absolute right-0 top-1 h-3.5 w-3.5 rounded-full bg-white ring-2 ring-[#080b0f]" />
                       )}
                     </span>
-                    <span className={`text-[20px] leading-none tracking-normal ${item.active ? 'font-bold' : 'font-semibold'}`}>
+                    <span className={`hidden text-[20px] leading-none tracking-normal xl:inline ${item.active ? 'font-bold' : 'font-semibold'}`}>
                       {item.label}
                     </span>
                   </button>
@@ -1378,20 +1398,20 @@ export default function App() {
             <button
               type="button"
               onClick={handleSignOut}
-              className="mt-auto flex h-12 w-full items-center gap-4 rounded-xl px-4 text-left text-zinc-400 transition hover:bg-[#13161a] hover:text-white"
+              className="mt-auto flex h-12 w-full items-center justify-center gap-4 rounded-xl px-2 text-left text-zinc-400 transition hover:bg-[#13161a] hover:text-white xl:justify-start xl:px-4"
               title="Log out"
             >
               <span className="flex h-10 w-10 items-center justify-center">
                 <LogOut size={24} strokeWidth={1.9} />
               </span>
-              <span className="text-[18px] font-semibold leading-none">Logout</span>
+              <span className="hidden text-[18px] font-semibold leading-none xl:inline">Logout</span>
             </button>
           </aside>
 
           {/* ========================================== */}
           {/* MOBILE HEADER (TOP) */}
           {/* ========================================== */}
-          <header className="md:hidden sticky top-0 z-30 bg-black/90 backdrop-blur-md border-b border-zinc-900 px-4 py-3 flex items-center justify-between">
+          <header className="safe-top sticky top-0 z-30 flex min-h-14 items-center justify-between border-b border-zinc-900 bg-black/90 px-3 py-2.5 backdrop-blur-md md:hidden sm:px-4">
             {viewMode === 'profile' || viewMode === 'creator_profile' ? (
               <div className="flex items-center gap-2 min-w-0">
                 {viewMode === 'creator_profile' && (
@@ -1450,10 +1470,10 @@ export default function App() {
           {/* ========================================== */}
           {/* MAIN CONTAINER */}
           {/* ========================================== */}
-          <main className="flex-1 flex flex-col overflow-x-hidden pb-16 md:flex-row md:pb-0">
+          <main className="flex min-w-0 flex-1 flex-col overflow-x-hidden pb-[calc(4.75rem+env(safe-area-inset-bottom))] md:flex-row md:pb-0">
 
             {/* LEFT / CENTER CORE WORKSPACE */}
-            <div className="flex w-full flex-1 flex-col px-4 py-5 md:px-10 lg:items-end lg:pr-12">
+            <div className="responsive-page-gutter flex min-w-0 w-full flex-1 flex-col px-4 py-5 md:px-6 lg:px-8 xl:items-end xl:pr-10">
               
               {/* ========================================== */}
               {/* VIEW: HOME FEED (STORIES & VIDEO STREAMS) */}
@@ -1496,9 +1516,9 @@ export default function App() {
               {/* VIEW: CREATOR ONLY VIDEOS FEED (HIDDEN VIEW) */}
               {/* ========================================== */}
               {viewMode === 'creator_feed' && (
-                <div className="space-y-6 flex flex-col h-full" id="creator-feed-container">
+                <div className="flex h-full w-full max-w-[660px] flex-col space-y-6" id="creator-feed-container">
                   {/* Header with Back button and Follow toggle */}
-                  <div className="flex items-center justify-between bg-zinc-950/60 border border-zinc-900/60 p-4 rounded-3xl">
+                  <div className="flex flex-col gap-3 rounded-xl border border-zinc-900/60 bg-zinc-950/60 p-4 sm:flex-row sm:items-center sm:justify-between">
                     <button
                       onClick={() => {
                         setViewMode('home');
@@ -1608,7 +1628,7 @@ export default function App() {
             {/* ========================================== */}
             {viewMode === 'home' && (
               <>
-                <aside className="fixed bottom-0 right-0 top-0 z-20 hidden w-[360px] bg-black px-8 py-14 lg:block">
+                <aside className="fixed bottom-0 right-0 top-0 z-20 hidden w-[360px] overflow-y-auto bg-black px-8 py-14 xl:block">
                   <div className="mb-9 flex items-center justify-between">
                     <button
                       onClick={() => setViewMode('profile')}
@@ -1672,7 +1692,7 @@ export default function App() {
                 </aside>
                 <div
                   aria-hidden="true"
-                  className="hidden w-[360px] shrink-0 lg:block"
+                  className="hidden w-[360px] shrink-0 xl:block"
                 />
               </>
             )}
@@ -1682,14 +1702,14 @@ export default function App() {
           {/* ========================================== */}
           {/* MOBILE BOTTOM NAVIGATION BAR */}
           {/* ========================================== */}
-          <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-black/95 backdrop-blur-md border-t border-zinc-900 px-5 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] flex items-center justify-between">
+          <nav className="fixed bottom-0 left-0 right-0 z-40 flex min-h-16 items-start justify-around border-t border-zinc-900 bg-black/95 px-1 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] backdrop-blur-md md:hidden sm:px-4">
             <button
               onClick={() => {
                 setViewMode('home');
                 setFeedTab('for_you');
                 setIsActivityOpen(false);
               }}
-              className={`flex flex-col items-center gap-1 transition ${
+              className={`flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-1 transition ${
                 viewMode === 'home' && feedTab === 'for_you' && !isActivityOpen ? 'text-white' : 'text-zinc-500'
               }`}
             >
@@ -1703,7 +1723,7 @@ export default function App() {
                 setFeedTab('latest');
                 setIsActivityOpen(false);
               }}
-              className={`flex flex-col items-center gap-1 transition ${
+              className={`flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-1 transition ${
                 viewMode === 'home' && feedTab === 'latest' && !isActivityOpen ? 'text-white' : 'text-zinc-500'
               }`}
             >
@@ -1713,7 +1733,7 @@ export default function App() {
 
             <button
               onClick={openActivityPanel}
-              className={`flex flex-col items-center gap-1 transition ${
+              className={`flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-1 transition ${
                 isActivityOpen ? 'text-white' : 'text-zinc-500'
               }`}
               aria-label={hasUnreadActivity ? `${unreadActivityCount} unread notifications` : 'Activity'}
@@ -1733,7 +1753,7 @@ export default function App() {
                   setIsActivityOpen(false);
                   openCreatorGallery();
                 }}
-                className="flex flex-col items-center gap-1 text-zinc-500 transition hover:text-white"
+                className="flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-1 text-zinc-500 transition hover:text-white"
               >
                 <Plus size={20} />
                 <span className="text-[9px] font-bold">Create</span>
@@ -1745,7 +1765,7 @@ export default function App() {
                 setIsActivityOpen(false);
                 setViewMode('profile');
               }}
-              className={`flex flex-col items-center gap-1 transition ${
+              className={`flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-1 transition ${
                 viewMode === 'profile' && !isActivityOpen ? 'text-white' : 'text-zinc-500'
               }`}
             >
@@ -1760,7 +1780,7 @@ export default function App() {
             </button>
           </nav>
 
-          {isCreator && (
+          {isCreator && viewMode !== 'profile' && (
             <button
               onClick={openCreatorGallery}
               className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-5 md:bottom-7 md:right-7 z-40 h-14 w-14 rounded-full bg-white text-black shadow-[0_0_32px_rgba(176,196,158,0.35)] flex items-center justify-center transition hover:scale-105 active:scale-95"
@@ -1817,9 +1837,17 @@ export default function App() {
         />
       )}
 
+      <DeleteConfirmModal
+        isOpen={Boolean(pendingDeleteVideo)}
+        itemName={pendingDeleteVideo?.title || 'This video'}
+        isDeleting={isDeletingVideo}
+        onCancel={() => !isDeletingVideo && setPendingDeleteVideo(null)}
+        onConfirm={confirmDeleteVideo}
+      />
+
       <AnimatePresence>
         {isLogoutConfirmOpen && (
-          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 px-4 text-white backdrop-blur-sm">
+          <div className="safe-top safe-bottom fixed inset-0 z-[70] flex items-center justify-center bg-black/70 px-3 text-white backdrop-blur-sm sm:px-4">
             <motion.button
               type="button"
               className="absolute inset-0 cursor-default"

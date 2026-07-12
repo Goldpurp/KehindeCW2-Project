@@ -41,8 +41,8 @@ export default function DashboardGrid({ videos, onSelectVideo }: DashboardGridPr
       </div>
 
       {/* Search and Filters Header bar */}
-      <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl flex flex-col gap-4 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
-        <div className="flex gap-2">
+      <div className="flex flex-col gap-4 rounded-xl border border-zinc-800 bg-zinc-900 p-4 shadow-[0_0_30px_rgba(0,0,0,0.5)] sm:p-5">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
             <input
@@ -50,13 +50,13 @@ export default function DashboardGrid({ videos, onSelectVideo }: DashboardGridPr
               placeholder="Search by caption, creator, producer, or publisher..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl focus:border-cyan-500 focus:shadow-[0_0_10px_rgba(255,255,255,0.2)] focus:outline-none text-sm transition placeholder-zinc-500 text-white"
+              className="w-full rounded-xl border border-zinc-800 bg-zinc-950 py-3 pl-11 pr-4 text-base text-white transition placeholder-zinc-500 focus:border-cyan-500 focus:shadow-[0_0_10px_rgba(255,255,255,0.2)] focus:outline-none sm:py-2.5 sm:text-sm"
               id="dashboard-search-input"
             />
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`px-4 py-2.5 rounded-xl border text-xs font-black uppercase tracking-wider transition flex items-center gap-2 ${
+            className={`flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-black uppercase tracking-wider transition sm:w-auto ${
               showFilters || selectedGenre || selectedAgeRating
                 ? 'bg-cyan-500/10 border-cyan-500 text-cyan-400 shadow-[0_0_15px_rgba(255,255,255,0.2)]'
                 : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white'
@@ -105,7 +105,7 @@ export default function DashboardGrid({ videos, onSelectVideo }: DashboardGridPr
             <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
               <div>
                 <span className="text-xs font-bold text-zinc-500 block mb-2 uppercase tracking-widest font-mono">Age Suitability</span>
-                <div className="flex gap-1.5">
+                <div className="flex max-w-full gap-1.5 overflow-x-auto pb-1">
                   <button
                     onClick={() => setSelectedAgeRating(null)}
                     className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition uppercase tracking-wider ${
@@ -148,7 +148,7 @@ export default function DashboardGrid({ videos, onSelectVideo }: DashboardGridPr
 
       {/* Grid of Videos */}
       {filteredVideos.length === 0 ? (
-        <div className="flex flex-col items-center justify-center p-12 border border-dashed border-zinc-800 rounded-3xl text-zinc-500 bg-zinc-900/10 text-center space-y-2">
+        <div className="flex flex-col items-center justify-center p-6 sm:p-12 border border-dashed border-zinc-800 rounded-xl text-zinc-500 bg-zinc-900/10 text-center space-y-2">
           <HelpCircle size={36} className="opacity-40 animate-bounce text-cyan-400" />
           <p className="font-semibold text-sm text-zinc-300">No matching videos</p>
           <p className="text-xs text-zinc-500">Try adjusting your filters or typing different search terms.</p>
