@@ -1296,7 +1296,7 @@ export default function App() {
           {/* ========================================== */}
           {/* DESKTOP SIDEBAR (LEFT) */}
           {/* ========================================== */}
-          <aside className="sticky top-0 hidden h-dvh w-[88px] shrink-0 flex-col border-r border-zinc-900 bg-[#080a0d] px-3 py-5 md:flex xl:w-[232px] xl:px-5 xl:py-7">
+          <aside className="fixed inset-y-0 left-0 z-40 hidden h-dvh w-[88px] flex-col overflow-y-auto overscroll-contain border-r border-zinc-900 bg-[#080a0d] px-3 py-5 md:flex xl:w-[232px] xl:px-5 xl:py-7">
             <nav className="mt-16 space-y-2 xl:mt-24" aria-label="Primary">
               {[
                 {
@@ -1407,6 +1407,8 @@ export default function App() {
               <span className="hidden text-[18px] font-semibold leading-none xl:inline">Logout</span>
             </button>
           </aside>
+
+          <div aria-hidden="true" className="hidden w-[88px] shrink-0 md:block xl:w-[232px]" />
 
           {/* ========================================== */}
           {/* MOBILE HEADER (TOP) */}
