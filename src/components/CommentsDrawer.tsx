@@ -35,6 +35,7 @@ interface CommentsDrawerProps {
   video: Video;
   onClose: () => void;
   onCommentCountUpdate?: () => void;
+  profilePhotoByUserId?: Record<string, string>;
 }
 
 const formatCount = (value = 0) => {
@@ -63,7 +64,13 @@ const getRelativeTime = (createdAt: any) => {
   return `${Math.max(1, Math.floor(days / 7))}w`;
 };
 
-export default function CommentsDrawer({ isOpen, video, onClose, onCommentCountUpdate }: CommentsDrawerProps) {
+export default function CommentsDrawer({
+  isOpen,
+  video,
+  onClose,
+  onCommentCountUpdate,
+  profilePhotoByUserId = {}
+}: CommentsDrawerProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -141,6 +148,7 @@ export default function CommentsDrawer({ isOpen, video, onClose, onCommentCountU
         videoId: video.id,
         userId: user.uid,
         userName: user.displayName || 'Anonymous',
+        userPhotoURL: user.photoURL || profilePhotoByUserId[user.uid] || '',
         text: newComment.trim(),
         createdAt: new Date()
       });
@@ -227,6 +235,24 @@ export default function CommentsDrawer({ isOpen, video, onClose, onCommentCountU
   const visibleComments = [...comments].reverse();
   const likedByName = isPostLiked ? 'you' : 'kehindecw2';
   const canDeletePost = Boolean(auth.currentUser?.uid && auth.currentUser.uid === video.creatorId);
+  const creatorPhotoURL = video.creatorPhotoURL || profilePhotoByUserId[video.creatorId] || '';
+
+  const renderAvatar = (
+    name: string,
+    photoURL?: string,
+    sizeClass = 'h-10 w-10',
+    textClass = 'text-[10px]'
+  ) => (
+    <span className={`${sizeClass} shrink-0 overflow-hidden rounded-full bg-gradient-to-tr from-white via-zinc-300 to-zinc-500 p-[1px]`}>
+      <span className={`flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-black bg-zinc-950 font-black uppercase text-white ${textClass}`}>
+        {photoURL ? (
+          <img src={photoURL} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+        ) : (
+          getInitials(name || 'User')
+        )}
+      </span>
+    </span>
+  );
 
   const togglePlay = () => {
     const node = videoRef.current;
@@ -310,11 +336,7 @@ export default function CommentsDrawer({ isOpen, video, onClose, onCommentCountU
             <section className="flex min-h-0 flex-col bg-[#202126]">
               <header className="relative flex items-center justify-between border-b border-zinc-800 px-4 py-4">
                 <div className="flex min-w-0 items-center gap-3 text-left">
-                  <span className="h-11 w-11 rounded-full bg-gradient-to-tr from-yellow-400 via-fuchsia-500 to-purple-600 p-[2px]">
-                    <span className="flex h-full w-full items-center justify-center rounded-full border border-black bg-zinc-950 text-[11px] font-black">
-                      {getInitials(video.creatorName)}
-                    </span>
-                  </span>
+                  {renderAvatar(video.creatorName, creatorPhotoURL, 'h-11 w-11', 'text-[11px]')}
                   <span className="min-w-0">
                     <span className="flex items-center gap-1 text-sm font-extrabold text-white">
                       {video.creatorName}
@@ -385,11 +407,7 @@ export default function CommentsDrawer({ isOpen, video, onClose, onCommentCountU
 
               <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5">
                 <div className="mb-7 flex gap-3">
-                  <span className="h-10 w-10 shrink-0 rounded-full bg-gradient-to-tr from-yellow-400 via-fuchsia-500 to-purple-600 p-[2px]">
-                    <span className="flex h-full w-full items-center justify-center rounded-full border border-black bg-zinc-950 text-[10px] font-black">
-                      {getInitials(video.creatorName)}
-                    </span>
-                  </span>
+                  {renderAvatar(video.creatorName, creatorPhotoURL)}
                   <div className="min-w-0 flex-1 text-sm leading-relaxed">
                     <p>
                       <span className="mr-1 font-extrabold text-white">{video.creatorName}</span>
@@ -414,11 +432,10 @@ export default function CommentsDrawer({ isOpen, video, onClose, onCommentCountU
                   <div className="space-y-6">
                     {visibleComments.map((comment) => {
                       const hasLiked = Boolean(auth.currentUser?.uid && comment.likes?.includes(auth.currentUser.uid));
+                      const commentPhotoURL = comment.userPhotoURL || profilePhotoByUserId[comment.userId] || '';
                       return (
                         <div key={comment.id} className="group flex gap-3">
-                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-700 text-xs font-black uppercase text-white">
-                            {comment.userName.charAt(0)}
-                          </span>
+                          {renderAvatar(comment.userName, commentPhotoURL, 'h-10 w-10', 'text-[10px]')}
                           <div className="min-w-0 flex-1">
                             <p className="text-sm leading-snug text-zinc-100">
                               <span className="mr-1 font-extrabold text-white">{comment.userName}</span>

@@ -42,6 +42,7 @@ interface InstagramFeedListProps {
   onSelectReel?: (video: Video, index: number) => void;
   onSelectCreator?: (creatorName: string) => void;
   onShowToast?: (message: string) => void;
+  profilePhotoByUserId?: Record<string, string>;
 }
 
 const PULL_REFRESH_TRIGGER = 72;
@@ -82,7 +83,8 @@ function InstagramPostCard({
   onRefresh,
   onSelectReel,
   onSelectCreator,
-  onShowToast
+  onShowToast,
+  profilePhotoByUserId = {}
 }: {
   key?: string;
   video: Video;
@@ -91,10 +93,12 @@ function InstagramPostCard({
   onSelectReel?: (video: Video, index: number) => void;
   onSelectCreator?: (creatorName: string) => void;
   onShowToast?: (message: string) => void;
+  profilePhotoByUserId?: Record<string, string>;
 }) {
   const currentUserId = auth.currentUser?.uid;
   const isLiked = Boolean(currentUserId && video.likes?.includes(currentUserId));
   const canDeleteVideo = Boolean(currentUserId && currentUserId === video.creatorId);
+  const creatorPhotoURL = video.creatorPhotoURL || profilePhotoByUserId[video.creatorId] || '';
 
   const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState(false);
@@ -288,8 +292,12 @@ function InstagramPostCard({
             className="flex min-w-0 items-center gap-2 text-left"
           >
             <span className="h-9 w-9 shrink-0 rounded-full bg-gradient-to-tr from-yellow-400 via-fuchsia-500 to-purple-600 p-[2px]">
-              <span className="flex h-full w-full items-center justify-center rounded-full border border-black bg-zinc-950 text-[10px] font-black text-white">
-                {getInitials(video.creatorName)}
+              <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-black bg-zinc-950 text-[10px] font-black text-white">
+                {creatorPhotoURL ? (
+                  <img src={creatorPhotoURL} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  getInitials(video.creatorName)
+                )}
               </span>
             </span>
             <span className="min-w-0">
@@ -454,6 +462,7 @@ function InstagramPostCard({
       <CommentsDrawer
         isOpen={isCommentsOpen}
         video={video}
+        profilePhotoByUserId={profilePhotoByUserId}
         onClose={() => setIsCommentsOpen(false)}
         onCommentCountUpdate={onRefresh}
       />
@@ -466,7 +475,8 @@ export default function InstagramFeedList({
   onRefresh,
   onSelectReel,
   onSelectCreator,
-  onShowToast
+  onShowToast,
+  profilePhotoByUserId = {}
 }: InstagramFeedListProps) {
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -703,6 +713,7 @@ export default function InstagramFeedList({
           onSelectReel={onSelectReel}
           onSelectCreator={onSelectCreator}
           onShowToast={onShowToast}
+          profilePhotoByUserId={profilePhotoByUserId}
         />
       ))}
     </div>

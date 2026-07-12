@@ -2,19 +2,17 @@ import { useState } from 'react';
 import {
   ArrowLeft,
   BadgeCheck,
-  Bookmark,
   Camera,
   Eye,
   Film,
-  Grid3X3,
+  Heart,
+  MessageCircle,
   Plus,
-  Repeat2,
   Settings,
   Star,
   Trash2,
   UploadCloud,
-  UserPlus,
-  UserSquare2
+  UserPlus
 } from 'lucide-react';
 import { Video } from '../types';
 
@@ -70,12 +68,14 @@ export default function ProfileScreen({
   onSelectVideo
 }: ProfileScreenProps) {
   const cleanUsername = username || 'kehindecw2_user';
-  const [activeTab, setActiveTab] = useState<'posts' | 'saved' | 'reposts' | 'tagged'>('posts');
   const [profileNotice, setProfileNotice] = useState<string | null>(null);
   const initials = cleanUsername.slice(0, 2).toUpperCase();
   const isCreator = role === 'creator';
-  const profileImageUrl = photoURL || (!isOwnProfile ? videos[0]?.thumbnailUrl : '');
+  const profileImageUrl = photoURL || videos.find((video) => video.creatorPhotoURL)?.creatorPhotoURL || '';
   const totalViews = videos.reduce((sum, video) => sum + (video.viewCount || 0), 0);
+  const totalLikes = videos.reduce((sum, video) => sum + (video.likes?.length || 0), 0);
+  const totalComments = videos.reduce((sum, video) => sum + (video.commentCount || 0), 0);
+  const totalRatings = videos.reduce((sum, video) => sum + Object.keys(video.ratings || {}).length, 0);
   const ratedVideos = videos.filter((video) => video.averageRating > 0);
   const averageScore = ratedVideos.length
     ? (ratedVideos.reduce((sum, video) => sum + video.averageRating, 0) / ratedVideos.length).toFixed(1)
@@ -86,6 +86,12 @@ export default function ProfileScreen({
     { label: 'posts', value: videos.length.toString() },
     { label: 'followers', value: followersLabel },
     { label: 'following', value: followingCount.toLocaleString() }
+  ];
+
+  const engagementStats = [
+    { label: 'Likes', value: totalLikes.toLocaleString(), icon: Heart },
+    { label: 'Comments', value: totalComments.toLocaleString(), icon: MessageCircle },
+    { label: 'Rating', value: `${averageScore} (${totalRatings})`, icon: Star }
   ];
 
   const actionLabel = isOwnProfile ? 'Edit profile' : isFollowing ? 'Following' : 'Follow';
@@ -303,9 +309,19 @@ export default function ProfileScreen({
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between border-t border-zinc-900 pt-3 text-xs font-bold text-zinc-500">
-                        <span>{(video.viewCount || 0).toLocaleString()} views</span>
-                        <span>{video.likes?.length || 0} likes</span>
+                      <div className="grid grid-cols-3 gap-2 border-t border-zinc-900 pt-3 text-xs font-bold text-zinc-500">
+                        <span className="flex items-center gap-1">
+                          <Heart size={13} />
+                          {video.likes?.length || 0}
+                        </span>
+                        <span className="flex items-center justify-center gap-1">
+                          <MessageCircle size={13} />
+                          {video.commentCount || 0}
+                        </span>
+                        <span className="flex items-center justify-end gap-1">
+                          <Star size={13} />
+                          {video.averageRating ? video.averageRating.toFixed(1) : '0.0'}
+                        </span>
                       </div>
                     </div>
                   </button>
@@ -455,7 +471,7 @@ export default function ProfileScreen({
                     {actionLabel}
                   </button>
                   <button
-                    onClick={() => setActiveTab('saved')}
+                    onClick={() => showProfileNotice('Archive is empty.')}
                     className="rounded-lg bg-[#262a2f] px-4 py-2 text-sm font-bold text-zinc-100 transition hover:bg-[#30343a] md:min-w-48"
                   >
                     View archive
@@ -491,57 +507,21 @@ export default function ProfileScreen({
       </div>
 
       <div className="border-t border-zinc-900">
-        <div className="grid grid-cols-4 text-zinc-500">
-          <button
-            onClick={() => setActiveTab('posts')}
-            className={`h-12 flex items-center justify-center border-t -mt-px ${activeTab === 'posts' ? 'border-white text-white' : 'border-transparent hover:text-white'}`}
-            title="Posts"
-          >
-            <Grid3X3 size={22} />
-          </button>
-          <button
-            onClick={() => setActiveTab('saved')}
-            className={`h-12 flex items-center justify-center border-t -mt-px ${activeTab === 'saved' ? 'border-white text-white' : 'border-transparent hover:text-white'}`}
-            title="Saved"
-          >
-            <Bookmark size={21} />
-          </button>
-          <button
-            onClick={() => setActiveTab('reposts')}
-            className={`h-12 flex items-center justify-center border-t -mt-px ${activeTab === 'reposts' ? 'border-white text-white' : 'border-transparent hover:text-white'}`}
-            title="Reposts"
-          >
-            <Repeat2 size={21} />
-          </button>
-          <button
-            onClick={() => setActiveTab('tagged')}
-            className={`h-12 flex items-center justify-center border-t -mt-px ${activeTab === 'tagged' ? 'border-white text-white' : 'border-transparent hover:text-white'}`}
-            title="Tagged"
-          >
-            <UserSquare2 size={21} />
-          </button>
+        <div className="grid grid-cols-3 text-zinc-400">
+          {engagementStats.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.label} className="-mt-px flex h-14 items-center justify-center gap-2 border-t border-transparent text-xs font-bold text-zinc-300 md:text-sm">
+                <Icon size={17} className="text-white" />
+                <span className="font-black text-white">{item.value}</span>
+                <span className="hidden text-zinc-500 sm:inline">{item.label}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {activeTab !== 'posts' ? (
-        <div className="min-h-[300px] flex flex-col items-center justify-center text-center px-6">
-          <div className="w-[72px] h-[72px] rounded-full border-2 border-zinc-200 flex items-center justify-center mb-6">
-            {activeTab === 'saved' && <Bookmark size={34} />}
-            {activeTab === 'reposts' && <Repeat2 size={34} />}
-            {activeTab === 'tagged' && <UserSquare2 size={34} />}
-          </div>
-          <h2 className="text-2xl md:text-3xl font-black tracking-tight">
-            {activeTab === 'saved' && 'No saved posts'}
-            {activeTab === 'reposts' && 'No reposts yet'}
-            {activeTab === 'tagged' && 'No tagged posts'}
-          </h2>
-          <p className="mt-2 text-sm text-zinc-500">
-            {activeTab === 'saved' && 'Saved videos will appear here.'}
-            {activeTab === 'reposts' && 'Reposted videos will appear here.'}
-            {activeTab === 'tagged' && 'Tagged videos will appear here.'}
-          </p>
-        </div>
-      ) : videos.length === 0 ? (
+      {videos.length === 0 ? (
         <div className="min-h-[300px] flex flex-col items-center justify-center text-center px-6">
           <div className="w-[72px] h-[72px] rounded-full border-2 border-zinc-200 flex items-center justify-center mb-6">
             <Camera size={34} />
@@ -566,8 +546,18 @@ export default function ProfileScreen({
                 referrerPolicy="no-referrer"
               />
               <div className="absolute inset-0 hidden items-center justify-center gap-2 bg-black/35 text-white group-hover:flex">
-                <Film size={17} />
-                <span className="text-xs font-bold">{video.viewCount || 0}</span>
+                <span className="flex items-center gap-1 text-xs font-bold">
+                  <Heart size={16} />
+                  {video.likes?.length || 0}
+                </span>
+                <span className="flex items-center gap-1 text-xs font-bold">
+                  <MessageCircle size={16} />
+                  {video.commentCount || 0}
+                </span>
+                <span className="flex items-center gap-1 text-xs font-bold">
+                  <Star size={16} />
+                  {video.averageRating ? video.averageRating.toFixed(1) : '0.0'}
+                </span>
               </div>
             </button>
           ))}

@@ -36,6 +36,7 @@ interface FeedProps {
   onBackToDashboard?: () => void;
   onSelectCreator?: (creatorName: string) => void;
   onShowToast?: (message: string) => void;
+  profilePhotoByUserId?: Record<string, string>;
 }
 
 interface FloatingReaction {
@@ -56,7 +57,8 @@ function FeedPostCard({
   onRefresh,
   onSelectCreator,
   onShowToast,
-  isCurrentlyVisible
+  isCurrentlyVisible,
+  profilePhotoByUserId = {}
 }: {
   key?: string;
   video: Video;
@@ -66,6 +68,7 @@ function FeedPostCard({
   onSelectCreator?: (creatorName: string) => void;
   onShowToast?: (message: string) => void;
   isCurrentlyVisible: boolean;
+  profilePhotoByUserId?: Record<string, string>;
 }) {
   const [playing, setPlaying] = useState(false);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
@@ -76,6 +79,7 @@ function FeedPostCard({
 
   const currentUserId = auth.currentUser?.uid;
   const isLiked = currentUserId && video.likes?.includes(currentUserId);
+  const creatorPhotoURL = video.creatorPhotoURL || profilePhotoByUserId[video.creatorId] || '';
 
   // Real-time comments count listener
   useEffect(() => {
@@ -261,8 +265,12 @@ function FeedPostCard({
         <div className="flex items-center gap-3">
           {/* Creator Avatar with Olive Green border */}
           <div className="w-9 h-9 rounded-full p-[2px] bg-gradient-to-tr from-[#3f3f46] to-[#d4d4d8]">
-            <div className="w-full h-full bg-zinc-950 rounded-full flex items-center justify-center text-[10px] font-black tracking-tighter text-[#f4f4f5] border border-black">
-              {getInitials(video.creatorName)}
+            <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-black bg-zinc-950 text-[10px] font-black tracking-tighter text-[#f4f4f5]">
+              {creatorPhotoURL ? (
+                <img src={creatorPhotoURL} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+              ) : (
+                getInitials(video.creatorName)
+              )}
             </div>
           </div>
           <div>
@@ -531,6 +539,7 @@ function FeedPostCard({
       <CommentsDrawer
         isOpen={isCommentsOpen}
         video={video}
+        profilePhotoByUserId={profilePhotoByUserId}
         onClose={() => setIsCommentsOpen(false)}
         onCommentCountUpdate={onRefresh}
       />
@@ -544,7 +553,8 @@ export default function Feed({
   onRefresh, 
   onBackToDashboard, 
   onSelectCreator,
-  onShowToast 
+  onShowToast,
+  profilePhotoByUserId = {}
 }: FeedProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [muted, setMuted] = useState(true);
@@ -861,6 +871,7 @@ export default function Feed({
             onRefresh={onRefresh}
             onSelectCreator={onSelectCreator}
             onShowToast={onShowToast}
+            profilePhotoByUserId={profilePhotoByUserId}
             isCurrentlyVisible={activeId === video.id}
           />
         ))}

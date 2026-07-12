@@ -18,12 +18,14 @@ export interface Video {
   thumbnailUrl: string;
   creatorId: string;
   creatorName: string;
+  creatorPhotoURL?: string;
   createdAt: any; // Backend timestamp
   likes: string[]; // Array of User UIDs
   ratings: { [userId: string]: number }; // Map of userId -> score
   averageRating: number;
   viewCount: number;
   shareCount?: number;
+  commentCount?: number;
 }
 
 export interface Comment {
@@ -31,6 +33,7 @@ export interface Comment {
   videoId: string;
   userId: string;
   userName: string;
+  userPhotoURL?: string;
   text: string;
   createdAt: any; // Backend timestamp
   likes?: string[]; // Array of User UIDs

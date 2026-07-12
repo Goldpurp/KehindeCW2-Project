@@ -35,7 +35,7 @@ import {
   query, 
   orderBy
 } from './lib/azure';
-import { GENRES, Video } from './types';
+import { GENRES, UserProfile, Video } from './types';
 import Feed from './components/Feed';
 import UploadModal from './components/UploadModal';
 import InstagramFeedList from './components/InstagramFeedList';
@@ -46,6 +46,7 @@ interface Sug {
   username: string;
   text: string;
   initial: string;
+  photoURL?: string;
 }
 
 type ActivityFilter = 'all' | 'following' | 'comments' | 'likes' | 'ratings' | 'uploads' | 'follows';
@@ -145,6 +146,8 @@ export default function App() {
 
   // Data states
   const [videos, setVideos] = useState<Video[]>([]);
+  const [profilesById, setProfilesById] = useState<Record<string, UserProfile>>({});
+  const [commentCountsByVideoId, setCommentCountsByVideoId] = useState<Record<string, number>>({});
   const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>([]);
   const [videosLoading, setVideosLoading] = useState(true);
   const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
@@ -169,14 +172,53 @@ export default function App() {
   const profileRole = (profile?.role || 'consumer') as 'creator' | 'consumer';
   const isCreator = profileRole === 'creator';
   const currentUsername = profile?.displayName?.toLowerCase().replace(/\s/g, '_') || user?.displayName?.toLowerCase().replace(/\s/g, '_') || 'user';
+  const profilePhotoByUserId = React.useMemo<Record<string, string>>(() => {
+    const next: Record<string, string> = {};
+    const profileList = Object.values(profilesById) as UserProfile[];
+    profileList.forEach((item) => {
+      if (item.uid && item.photoURL) {
+        next[item.uid] = item.photoURL;
+      }
+    });
+
+    const currentPhotoURL = profile?.photoURL || user?.photoURL || '';
+    if (user?.uid && currentPhotoURL) {
+      next[user.uid] = currentPhotoURL;
+    }
+
+    return next;
+  }, [profilesById, profile?.photoURL, user?.photoURL, user?.uid]);
+
+  const profileByName = React.useMemo<Record<string, UserProfile>>(() => {
+    const next: Record<string, UserProfile> = {};
+    const profileList = Object.values(profilesById) as UserProfile[];
+    profileList.forEach((item) => {
+      if (!item.displayName) return;
+      next[item.displayName] = item;
+      next[item.displayName.toLowerCase().replace(/\s/g, '_')] = item;
+    });
+    return next;
+  }, [profilesById]);
+
+  const videosWithProfilePhotos = React.useMemo(() => videos.map((video) => ({
+    ...video,
+    creatorPhotoURL: profilePhotoByUserId[video.creatorId] || video.creatorPhotoURL || '',
+    commentCount: commentCountsByVideoId[video.id] ?? video.commentCount ?? 0
+  })), [commentCountsByVideoId, profilePhotoByUserId, videos]);
+
+  const selectedCreatorPhotoURL = profileByName[selectedCreatorName]?.photoURL
+    || videosWithProfilePhotos.find((video) => video.creatorName === selectedCreatorName)?.creatorPhotoURL
+    || '';
+
   const creatorSuggestions: Sug[] = Array.from(
     new Map<string, Sug>(
-      videos
+      videosWithProfilePhotos
         .filter((video) => video.creatorName && video.creatorId !== user?.uid)
         .map((video) => [video.creatorName, {
           username: video.creatorName,
           text: `${video.genre || 'Video'} creator`,
-          initial: video.creatorName.substring(0, 2).toUpperCase()
+          initial: video.creatorName.substring(0, 2).toUpperCase(),
+          photoURL: video.creatorPhotoURL || profilePhotoByUserId[video.creatorId] || ''
         }])
     ).values()
   ).slice(0, 5);
@@ -298,6 +340,61 @@ export default function App() {
       unsubscribeVideos();
     };
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setProfilesById({});
+      return;
+    }
+
+    const usersQuery = query(collection(db, 'users'));
+    const unsubscribeUsers = onSnapshot(usersQuery, (snapshot) => {
+      const next: Record<string, UserProfile> = {};
+      snapshot.forEach((docSnap: any) => {
+        const data = docSnap.data() as UserProfile;
+        if (data?.uid) {
+          next[data.uid] = data;
+        }
+      });
+      setProfilesById(next);
+    }, (error) => {
+      console.error("Error fetching user profiles:", error);
+    });
+
+    return () => unsubscribeUsers();
+  }, [user?.uid]);
+
+  const videoIdsKey = videos.map((video) => video.id).join('|');
+
+  useEffect(() => {
+    if (!user || videos.length === 0) {
+      setCommentCountsByVideoId({});
+      return;
+    }
+
+    const unsubscribers = videos.map((video) => {
+      const commentsRef = collection(db, 'videos', video.id, 'comments');
+      return onSnapshot(query(commentsRef), (snapshot) => {
+        setCommentCountsByVideoId((current) => (
+          current[video.id] === snapshot.size
+            ? current
+            : { ...current, [video.id]: snapshot.size }
+        ));
+      }, (error) => {
+        console.error("Error fetching comment count:", error);
+      });
+    });
+
+    setCommentCountsByVideoId((current) => {
+      const videoIds = new Set(videos.map((video) => video.id));
+      const next = Object.fromEntries(Object.entries(current).filter(([id]) => videoIds.has(id)));
+      return Object.keys(next).length === Object.keys(current).length ? current : next;
+    });
+
+    return () => {
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [user?.uid, videoIdsKey]);
 
   useEffect(() => {
     if (!user) {
@@ -469,7 +566,7 @@ export default function App() {
 
   // Shuffled "For You" feeds
   const getForYouVideos = () => {
-    return [...videos].sort((a, b) => {
+    return [...videosWithProfilePhotos].sort((a, b) => {
       // Deterministic pseudo-random sorting based on id characters to keep lists stable per watch session
       const codeA = a.id.charCodeAt(0) || 0;
       const codeB = b.id.charCodeAt(0) || 0;
@@ -478,7 +575,7 @@ export default function App() {
   };
 
   const getLatestVideos = () => {
-    return [...videos].sort((a, b) => getCreatedAtTime(b.createdAt) - getCreatedAtTime(a.createdAt));
+    return [...videosWithProfilePhotos].sort((a, b) => getCreatedAtTime(b.createdAt) - getCreatedAtTime(a.createdAt));
   };
 
   const getSearchVideos = () => {
@@ -500,7 +597,7 @@ export default function App() {
   };
 
   const openVideoPost = (video: Video) => {
-    const freshVideo = videos.find((item) => item.id === video.id) || video;
+    const freshVideo = videosWithProfilePhotos.find((item) => item.id === video.id) || video;
     setSelectedPostVideo(freshVideo);
   };
 
@@ -528,7 +625,7 @@ export default function App() {
 
   // Filtered "Following" feeds
   const getFollowingVideos = () => {
-    return videos.filter(v => followingList.includes(v.creatorName));
+    return videosWithProfilePhotos.filter(v => followingList.includes(v.creatorName));
   };
 
   const getFilteredVideos = () => {
@@ -581,8 +678,12 @@ export default function App() {
           className="flex min-w-0 items-center gap-3 text-left transition hover:opacity-90"
         >
           <div className="h-11 w-11 shrink-0 rounded-full bg-gradient-to-tr from-yellow-400 via-fuchsia-500 to-purple-600 p-[2px]">
-            <div className="flex h-full w-full items-center justify-center rounded-full border border-black bg-zinc-950 text-[10px] font-black text-white">
-            {sug.initial}
+            <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-black bg-zinc-950 text-[10px] font-black text-white">
+              {sug.photoURL ? (
+                <img src={sug.photoURL} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+              ) : (
+                sug.initial
+              )}
             </div>
           </div>
           <div className="min-w-0">
@@ -764,6 +865,7 @@ export default function App() {
       video?: Video;
       timestamp: number;
       isFollowing?: boolean;
+      photoURL?: string;
     };
     const filterOptions: Array<{ key: ActivityFilter; label: string }> = [
       { key: 'all', label: 'All' },
@@ -800,7 +902,7 @@ export default function App() {
       const rowType = activityTypeMap[event.type];
       if (!rowType) return [];
 
-      const video = event.videoId ? videos.find((item) => item.id === event.videoId) : undefined;
+      const video = event.videoId ? videosWithProfilePhotos.find((item) => item.id === event.videoId) : undefined;
       const actorName = event.actorName || 'KehindeCW2 user';
       return [{
         id: event.id,
@@ -809,6 +911,7 @@ export default function App() {
         text: event.text,
         date: formatActivityDate(event.createdAt),
         avatar: actorName.substring(0, 2).toUpperCase(),
+        photoURL: profilePhotoByUserId[event.actorId] || '',
         thumb: event.thumbnailUrl || video?.thumbnailUrl,
         video,
         timestamp: getCreatedAtTime(event.createdAt),
@@ -828,8 +931,12 @@ export default function App() {
     const renderRow = (row: ActivityRow) => (
       <div key={row.id} className="flex items-center gap-3 py-3">
         <div className="h-12 w-12 shrink-0 rounded-full bg-gradient-to-tr from-yellow-400 via-fuchsia-500 to-purple-600 p-[2px]">
-          <div className="flex h-full w-full items-center justify-center rounded-full bg-zinc-950 text-[10px] font-black text-white">
-            {row.avatar}
+          <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-zinc-950 text-[10px] font-black text-white">
+            {row.photoURL ? (
+              <img src={row.photoURL} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+            ) : (
+              row.avatar
+            )}
           </div>
         </div>
         <div className="min-w-0 flex-1 text-sm leading-snug">
@@ -1271,9 +1378,13 @@ export default function App() {
               </button>
               <button 
                 onClick={() => setViewMode('profile')}
-                className="w-7 h-7 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-[10px] font-black text-white"
+                className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full border border-zinc-800 bg-zinc-900 text-[10px] font-black text-white"
               >
-                {profile?.displayName?.charAt(0).toUpperCase() || 'U'}
+                {sidebarAvatarUrl ? (
+                  <img src={sidebarAvatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  profile?.displayName?.charAt(0).toUpperCase() || 'U'
+                )}
               </button>
               <button
                 onClick={handleSignOut}
@@ -1313,6 +1424,7 @@ export default function App() {
                         <InstagramFeedList
                           videos={getFilteredVideos()}
                           onRefresh={refreshVideoFeed}
+                          profilePhotoByUserId={profilePhotoByUserId}
                           onSelectCreator={(creatorName) => {
                             setSelectedCreatorName(creatorName);
                             setSelectedVideoIndex(0);
@@ -1370,9 +1482,10 @@ export default function App() {
                   {/* Filtered vertical scrolling feed */}
                   <div className="flex-1 flex items-center justify-center min-h-[55vh]">
                     <Feed
-                      videos={videos.filter(v => v.creatorName === selectedCreatorName)}
+                      videos={videosWithProfilePhotos.filter(v => v.creatorName === selectedCreatorName)}
                       initialIndex={0}
                       onRefresh={refreshVideoFeed}
+                      profilePhotoByUserId={profilePhotoByUserId}
                       onSelectCreator={(creator) => {
                         setSelectedCreatorName(creator);
                         setSelectedVideoIndex(0);
@@ -1388,8 +1501,8 @@ export default function App() {
                   username={selectedCreatorName}
                   displayName={selectedCreatorName}
                   role="creator"
-                  photoURL=""
-                  videos={videos.filter(v => v.creatorName === selectedCreatorName)}
+                  photoURL={selectedCreatorPhotoURL}
+                  videos={videosWithProfilePhotos.filter(v => v.creatorName === selectedCreatorName)}
                   followingCount={3533}
                   followersLabel={followingList.includes(selectedCreatorName) ? '194' : '193'}
                   isFollowing={followingList.includes(selectedCreatorName)}
@@ -1411,7 +1524,7 @@ export default function App() {
                   email={profile?.email || user?.email}
                   role={profileRole}
                   photoURL={profile?.photoURL || user?.photoURL || ''}
-                  videos={isCreator ? videos.filter((video) => (
+                  videos={isCreator ? videosWithProfilePhotos.filter((video) => (
                     video.creatorId === user?.uid ||
                     video.creatorName === currentUsername ||
                     video.creatorName === profile?.displayName
@@ -1647,7 +1760,8 @@ export default function App() {
       {selectedPostVideo && (
         <CommentsDrawer
           isOpen={Boolean(selectedPostVideo)}
-          video={videos.find((video) => video.id === selectedPostVideo.id) || selectedPostVideo}
+          video={videosWithProfilePhotos.find((video) => video.id === selectedPostVideo.id) || selectedPostVideo}
+          profilePhotoByUserId={profilePhotoByUserId}
           onClose={() => setSelectedPostVideo(null)}
           onCommentCountUpdate={refreshVideoFeed}
         />
