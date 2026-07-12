@@ -48,6 +48,7 @@ interface InstagramFeedListProps {
 const PULL_REFRESH_TRIGGER = 72;
 const PULL_REFRESH_MAX = 104;
 const PULL_REFRESH_SETTLE_MS = 420;
+const countedViewSessions = new Set<string>();
 
 const formatCount = (value = 0) => {
   if (value >= 1000000) return `${(value / 1000000).toFixed(1)}m`;
@@ -98,6 +99,7 @@ function InstagramPostCard({
   const currentUserId = auth.currentUser?.uid;
   const isLiked = Boolean(currentUserId && video.likes?.includes(currentUserId));
   const canDeleteVideo = Boolean(currentUserId && currentUserId === video.creatorId);
+  const viewSessionKey = currentUserId ? `${currentUserId}:${video.id}` : '';
   const creatorPhotoURL = video.creatorPhotoURL || profilePhotoByUserId[video.creatorId] || '';
 
   const [muted, setMuted] = useState(true);
@@ -177,21 +179,21 @@ function InstagramPostCard({
   }, [video.id]);
 
   useEffect(() => {
-    if (!playing) return;
+    if (!playing || !currentUserId || currentUserId === video.creatorId || countedViewSessions.has(viewSessionKey)) return;
 
     const timer = window.setTimeout(async () => {
+      countedViewSessions.add(viewSessionKey);
       try {
         const docRef = doc(db, 'videos', video.id);
-        await updateDoc(docRef, {
-          viewCount: (video.viewCount || 0) + 1
-        });
+        await updateDoc(docRef, { viewCount: 1 });
       } catch (err) {
+        countedViewSessions.delete(viewSessionKey);
         console.error("Failed to auto-increment view count:", err);
       }
     }, 1500);
 
     return () => window.clearTimeout(timer);
-  }, [playing, video.id, video.viewCount]);
+  }, [currentUserId, playing, video.creatorId, video.id, viewSessionKey]);
 
   const togglePlay = () => {
     if (!videoRef.current) return;

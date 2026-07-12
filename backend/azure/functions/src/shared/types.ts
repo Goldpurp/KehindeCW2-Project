@@ -49,6 +49,7 @@ export type VideoRecord = {
   ratings: Record<string, number>;
   averageRating: number;
   viewCount: number;
+  viewedBy?: string[];
   shareCount: number;
 };
 

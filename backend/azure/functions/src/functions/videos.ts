@@ -22,6 +22,19 @@ const mediaUrl = (request: HttpRequest, videoId: string, kind: 'media' | 'thumbn
 
 const isDataUrl = (value?: string) => Boolean(value?.startsWith('data:'));
 
+const normalizedViewedBy = (video: VideoRecord) => (
+  Array.from(new Set((Array.isArray(video.viewedBy) ? video.viewedBy : []).filter(Boolean)))
+);
+
+const publicVideo = (video: VideoRecord): VideoRecord => {
+  const viewedBy = normalizedViewedBy(video);
+  return {
+    ...video,
+    viewedBy,
+    viewCount: viewedBy.length
+  };
+};
+
 export async function listVideos(request: HttpRequest): Promise<HttpResponseInit> {
   try {
     await requireUser(request);
@@ -49,7 +62,7 @@ export async function listVideos(request: HttpRequest): Promise<HttpResponseInit
 
     const query = `SELECT * FROM c ${filters.length ? `WHERE ${filters.join(' AND ')}` : ''} ORDER BY c.createdAt DESC`;
     const { resources } = await containers.videos.items.query<VideoRecord>({ query, parameters }).fetchAll();
-    return { jsonBody: resources };
+    return { jsonBody: resources.map(publicVideo) };
   } catch (error) {
     return asHttpError(error);
   }
@@ -61,7 +74,7 @@ export async function getVideo(request: HttpRequest): Promise<HttpResponseInit> 
     const videoId = request.params.videoId;
     const { resource: video } = await containers.videos.item(videoId, videoId).read<VideoRecord>();
     if (!video) return { status: 404, jsonBody: { error: 'Video not found.' } };
-    return { jsonBody: video };
+    return { jsonBody: publicVideo(video) };
   } catch (error) {
     return asHttpError(error);
   }
@@ -111,6 +124,7 @@ export async function createVideo(request: HttpRequest): Promise<HttpResponseIni
       ratings: {},
       averageRating: 0,
       viewCount: 0,
+      viewedBy: [],
       shareCount: 0
     };
 
@@ -218,15 +232,22 @@ export async function toggleLike(request: HttpRequest): Promise<HttpResponseInit
 
 export async function trackView(request: HttpRequest): Promise<HttpResponseInit> {
   try {
-    await requireUser(request);
+    const user = await requireUser(request);
     const videoId = request.params.videoId;
     const { resource: video } = await containers.videos.item(videoId, videoId).read<VideoRecord>();
     if (!video) return { status: 404, jsonBody: { error: 'Video not found.' } };
 
-    video.viewCount = (video.viewCount || 0) + 1;
+    const viewedBy = normalizedViewedBy(video);
+
+    if (user.id !== video.creatorId && !viewedBy.includes(user.id)) {
+      viewedBy.push(user.id);
+    }
+
+    video.viewedBy = viewedBy;
+    video.viewCount = viewedBy.length;
     video.updatedAt = nowIso();
     await containers.videos.item(video.id, video.id).replace(video);
-    return { jsonBody: video };
+    return { jsonBody: publicVideo(video) };
   } catch (error) {
     return asHttpError(error);
   }

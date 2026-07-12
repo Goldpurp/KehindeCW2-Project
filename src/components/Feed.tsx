@@ -46,6 +46,7 @@ interface FloatingReaction {
 const PULL_REFRESH_TRIGGER = 74;
 const PULL_REFRESH_MAX = 104;
 const PULL_REFRESH_SETTLE_MS = 450;
+const countedViewSessions = new Set<string>();
 
 // Separate component for each individual feed post item to isolate play/pause and animations
 function FeedPostCard({
@@ -77,6 +78,7 @@ function FeedPostCard({
 
   const currentUserId = auth.currentUser?.uid;
   const isLiked = currentUserId && video.likes?.includes(currentUserId);
+  const viewSessionKey = currentUserId ? `${currentUserId}:${video.id}` : '';
   const creatorPhotoURL = video.creatorPhotoURL || profilePhotoByUserId[video.creatorId] || '';
 
   // Real-time comments count listener
@@ -132,20 +134,19 @@ function FeedPostCard({
 
   // Handle views count (1.5s active watch time)
   useEffect(() => {
-    if (!isCurrentlyVisible) return;
+    if (!isCurrentlyVisible || !currentUserId || currentUserId === video.creatorId || countedViewSessions.has(viewSessionKey)) return;
     const timer = setTimeout(async () => {
+      countedViewSessions.add(viewSessionKey);
       try {
         const videoRefDoc = doc(db, 'videos', video.id);
-        const currentViews = video.viewCount || 0;
-        await updateDoc(videoRefDoc, {
-          viewCount: currentViews + 1
-        });
+        await updateDoc(videoRefDoc, { viewCount: 1 });
       } catch (error) {
+        countedViewSessions.delete(viewSessionKey);
         console.error("Error auto-incrementing views:", error);
       }
     }, 1500);
     return () => clearTimeout(timer);
-  }, [isCurrentlyVisible, video.id]);
+  }, [currentUserId, isCurrentlyVisible, video.creatorId, video.id, viewSessionKey]);
 
   const togglePlay = () => {
     if (videoRef.current) {

@@ -25,6 +25,7 @@ export interface Video {
   ratings: { [userId: string]: number }; // Map of userId -> score
   averageRating: number;
   viewCount: number;
+  viewedBy?: string[];
   shareCount?: number;
   commentCount?: number;
 }
