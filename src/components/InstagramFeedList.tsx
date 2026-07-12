@@ -62,7 +62,7 @@ const getInitials = (name: string) => {
 const getRelativeTime = (createdAt: any) => {
   const rawDate = createdAt?.toDate?.() || createdAt;
   const date = rawDate instanceof Date ? rawDate : rawDate ? new Date(rawDate) : null;
-  if (!date || Number.isNaN(date.getTime())) return '1w';
+  if (!date || Number.isNaN(date.getTime())) return 'unknown';
 
   const diffMs = Date.now() - date.getTime();
   const minutes = Math.max(1, Math.floor(diffMs / 60000));

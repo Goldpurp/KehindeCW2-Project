@@ -39,6 +39,7 @@ export async function createComment(request: HttpRequest): Promise<HttpResponseI
       videoId,
       userId: user.id,
       userName: user.displayName,
+      userPhotoURL: user.photoURL || '',
       text: body.text.trim(),
       likes: [],
       createdAt: nowIso()

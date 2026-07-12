@@ -99,7 +99,8 @@ export default function UploadModal({
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  const creatorName = user?.displayName?.trim() || user?.email?.split('@')[0] || 'kehindecw2';
+  const creatorName = user?.displayName?.trim() || user?.email?.split('@')[0] || '';
+  const creatorPhotoURL = user?.photoURL || '';
   const producer = creatorName;
   const publisher = creatorName;
 
@@ -167,6 +168,11 @@ export default function UploadModal({
 
     if (!user) {
       setError('Sign in first.');
+      return;
+    }
+
+    if (!creatorName) {
+      setError('Your profile is still loading.');
       return;
     }
 
@@ -393,7 +399,11 @@ export default function UploadModal({
                 <aside className="flex min-h-0 flex-col overflow-hidden bg-[#202126]">
                   <div className="shrink-0 flex items-center gap-3 border-b border-zinc-800 px-5 py-4">
                     <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-zinc-900 text-xs font-black uppercase text-white">
-                      {creatorName.slice(0, 2)}
+                      {creatorPhotoURL ? (
+                        <img src={creatorPhotoURL} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                      ) : (
+                        creatorName.slice(0, 2)
+                      )}
                     </span>
                     <span className="text-sm font-extrabold">{creatorName}</span>
                   </div>
@@ -472,7 +482,7 @@ export default function UploadModal({
                     </div>
 
                     <p className="mt-4 text-xs font-semibold leading-relaxed text-zinc-500">
-                      Your followers can see this video in their feed and on your admin profile.
+                      This video will appear in the feed and on your creator profile after it uploads.
                     </p>
                   </div>
                 </aside>

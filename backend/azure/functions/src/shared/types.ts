@@ -5,6 +5,8 @@ export type UserPrincipal = {
   email: string;
   displayName: string;
   role: UserRole;
+  photoURL?: string;
+  followingIds?: string[];
 };
 
 export type UserRecord = {
@@ -15,6 +17,7 @@ export type UserRecord = {
   role: UserRole;
   bio?: string;
   photoURL?: string;
+  followingIds?: string[];
   passwordHash?: string;
   passwordSalt?: string;
   createdAt: string;
@@ -39,6 +42,7 @@ export type VideoRecord = {
   fileName?: string;
   creatorId: string;
   creatorName: string;
+  creatorPhotoURL?: string;
   createdAt: string;
   updatedAt?: string;
   likes: string[];
@@ -53,6 +57,7 @@ export type CommentRecord = {
   videoId: string;
   userId: string;
   userName: string;
+  userPhotoURL?: string;
   text: string;
   likes: string[];
   createdAt: string;

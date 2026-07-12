@@ -4,6 +4,7 @@ export interface UserProfile {
   displayName: string;
   role: 'creator' | 'consumer';
   photoURL?: string;
+  followingIds?: string[];
   createdAt: any; // Backend timestamp or Date
 }
 

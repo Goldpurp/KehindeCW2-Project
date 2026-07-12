@@ -49,7 +49,7 @@ const getInitials = (name: string) => name.substring(0, 2).toUpperCase();
 const getRelativeTime = (createdAt: any) => {
   const rawDate = createdAt?.toDate?.() || createdAt;
   const date = rawDate instanceof Date ? rawDate : rawDate ? new Date(rawDate) : null;
-  if (!date || Number.isNaN(date.getTime())) return '1w';
+  if (!date || Number.isNaN(date.getTime())) return 'unknown';
 
   const diffMs = Date.now() - date.getTime();
   const minutes = Math.max(1, Math.floor(diffMs / 60000));
@@ -233,8 +233,8 @@ export default function CommentsDrawer({
   };
 
   const visibleComments = [...comments].reverse();
-  const likedByName = isPostLiked ? 'you' : 'kehindecw2';
   const canDeletePost = Boolean(auth.currentUser?.uid && auth.currentUser.uid === video.creatorId);
+  const likeCount = video.likes?.length || 0;
   const creatorPhotoURL = video.creatorPhotoURL || profilePhotoByUserId[video.creatorId] || '';
 
   const renderAvatar = (
@@ -513,7 +513,7 @@ export default function CommentsDrawer({
 
                 <div className="px-4 pb-3 text-sm">
                   <p className="font-semibold text-white">
-                    Liked by {likedByName} and others
+                    {likeCount > 0 ? `${formatCount(likeCount)} like${likeCount === 1 ? '' : 's'}` : 'No likes yet'}
                   </p>
                   <p className="mt-1 text-xs text-zinc-500">{getRelativeTime(video.createdAt)}</p>
                 </div>

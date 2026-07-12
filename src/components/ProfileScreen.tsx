@@ -470,12 +470,6 @@ export default function ProfileScreen({
                   >
                     {actionLabel}
                   </button>
-                  <button
-                    onClick={() => showProfileNotice('Archive is empty.')}
-                    className="rounded-lg bg-[#262a2f] px-4 py-2 text-sm font-bold text-zinc-100 transition hover:bg-[#30343a] md:min-w-48"
-                  >
-                    View archive
-                  </button>
                   {!isOwnProfile && (
                     <button
                       onClick={onFollow}

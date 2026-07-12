@@ -105,6 +105,7 @@ export async function createVideo(request: HttpRequest): Promise<HttpResponseIni
       fileName: body.fileName,
       creatorId: user.id,
       creatorName: user.displayName,
+      creatorPhotoURL: user.photoURL || '',
       createdAt: nowIso(),
       likes: [],
       ratings: {},

@@ -43,10 +43,12 @@ import ProfileScreen from './components/ProfileScreen';
 import CommentsDrawer from './components/CommentsDrawer';
 
 interface Sug {
+  userId: string;
   username: string;
   text: string;
   initial: string;
   photoURL?: string;
+  uploadCount: number;
 }
 
 type ActivityFilter = 'all' | 'following' | 'comments' | 'likes' | 'ratings' | 'uploads' | 'follows';
@@ -134,16 +136,6 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchGenre, setSearchGenre] = useState('All');
   
-  // Followed list
-  const [followingList, setFollowingList] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem('kehindecw2_following');
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
-
   // Data states
   const [videos, setVideos] = useState<Video[]>([]);
   const [profilesById, setProfilesById] = useState<Record<string, UserProfile>>({});
@@ -206,22 +198,59 @@ export default function App() {
     commentCount: commentCountsByVideoId[video.id] ?? video.commentCount ?? 0
   })), [commentCountsByVideoId, profilePhotoByUserId, videos]);
 
-  const selectedCreatorPhotoURL = profileByName[selectedCreatorName]?.photoURL
+  const selectedCreatorProfile = profileByName[selectedCreatorName] || null;
+  const selectedCreatorId = selectedCreatorProfile?.uid
+    || videosWithProfilePhotos.find((video) => video.creatorName === selectedCreatorName)?.creatorId
+    || '';
+  const selectedCreatorPhotoURL = selectedCreatorProfile?.photoURL
     || videosWithProfilePhotos.find((video) => video.creatorName === selectedCreatorName)?.creatorPhotoURL
     || '';
 
+  const currentFollowingIds = React.useMemo(() => {
+    const liveProfile = user?.uid ? profilesById[user.uid] : null;
+    return Array.isArray(liveProfile?.followingIds)
+      ? liveProfile.followingIds
+      : Array.isArray(profile?.followingIds)
+        ? profile.followingIds
+        : [];
+  }, [profile?.followingIds, profilesById, user?.uid]);
+
+  const followingSet = React.useMemo(() => new Set(currentFollowingIds), [currentFollowingIds]);
+  const followerCountByUserId = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    (Object.values(profilesById) as UserProfile[]).forEach((item) => {
+      (item.followingIds || []).forEach((followedId) => {
+        counts[followedId] = (counts[followedId] || 0) + 1;
+      });
+    });
+    return counts;
+  }, [profilesById]);
+
+  const uploadCountByCreatorId = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    videosWithProfilePhotos.forEach((video) => {
+      counts[video.creatorId] = (counts[video.creatorId] || 0) + 1;
+    });
+    return counts;
+  }, [videosWithProfilePhotos]);
+
   const creatorSuggestions: Sug[] = Array.from(
     new Map<string, Sug>(
-      videosWithProfilePhotos
-        .filter((video) => video.creatorName && video.creatorId !== user?.uid)
-        .map((video) => [video.creatorName, {
-          username: video.creatorName,
-          text: `${video.genre || 'Video'} creator`,
-          initial: video.creatorName.substring(0, 2).toUpperCase(),
-          photoURL: video.creatorPhotoURL || profilePhotoByUserId[video.creatorId] || ''
-        }])
+      (Object.values(profilesById) as UserProfile[])
+        .filter((item) => item.role === 'creator' && item.uid !== user?.uid)
+        .map((item): [string, Sug] => {
+          const uploadCount = uploadCountByCreatorId[item.uid] || 0;
+          return [item.uid, {
+            userId: item.uid,
+            username: item.displayName,
+            text: `${uploadCount} upload${uploadCount === 1 ? '' : 's'}`,
+            initial: item.displayName.substring(0, 2).toUpperCase(),
+            photoURL: item.photoURL || '',
+            uploadCount
+          }];
+        })
     ).values()
-  ).slice(0, 5);
+  ).sort((a, b) => b.uploadCount - a.uploadCount || a.username.localeCompare(b.username)).slice(0, 5);
   const unreadActivityCount = activityEvents.filter((event) => !event.read).length;
   const hasUnreadActivity = unreadActivityCount > 0;
 
@@ -231,11 +260,6 @@ export default function App() {
       setActiveDesktopNav('home');
     }
   }, [activeDesktopNav, isCreator, profile]);
-
-  // Save following list
-  useEffect(() => {
-    localStorage.setItem('kehindecw2_following', JSON.stringify(followingList));
-  }, [followingList]);
 
   // Toast notifier
   const showToast = (msg: string) => {
@@ -363,6 +387,18 @@ export default function App() {
 
     return () => unsubscribeUsers();
   }, [user?.uid]);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    const liveProfile = profilesById[user.uid];
+    if (!liveProfile) return;
+
+    setProfile((current: any) => {
+      const currentString = JSON.stringify(current || {});
+      const nextString = JSON.stringify(liveProfile);
+      return currentString === nextString ? current : liveProfile;
+    });
+  }, [profilesById, user?.uid]);
 
   const videoIdsKey = videos.map((video) => video.id).join('|');
 
@@ -492,8 +528,6 @@ export default function App() {
     setIsSigningOut(true);
     try {
       await signOut(auth);
-      localStorage.removeItem('kehindecw2_following');
-      setFollowingList([]);
       setIsLogoutConfirmOpen(false);
       showToast("Logged out successfully");
     } catch (err) {
@@ -625,7 +659,7 @@ export default function App() {
 
   // Filtered "Following" feeds
   const getFollowingVideos = () => {
-    return videosWithProfilePhotos.filter(v => followingList.includes(v.creatorName));
+    return videosWithProfilePhotos.filter(v => followingSet.has(v.creatorId));
   };
 
   const getFilteredVideos = () => {
@@ -649,13 +683,28 @@ export default function App() {
   };
 
   // Follow/Unfollow creator handler
-  const toggleFollowCreator = (creatorName: string) => {
-    if (followingList.includes(creatorName)) {
-      setFollowingList(prev => prev.filter(item => item !== creatorName));
-      showToast(`Unfollowed @${creatorName}`);
-    } else {
-      setFollowingList(prev => [...prev, creatorName]);
-      showToast(`Now following @${creatorName}!`);
+  const toggleFollowCreator = async (creatorId: string, creatorName: string) => {
+    if (!user?.uid || !creatorId) {
+      showToast('Creator account not found.');
+      return;
+    }
+    if (creatorId === user.uid) {
+      showToast('This is your account.');
+      return;
+    }
+
+    const nextFollowingIds = followingSet.has(creatorId)
+      ? currentFollowingIds.filter((id) => id !== creatorId)
+      : [...currentFollowingIds, creatorId];
+
+    setProfile((current: any) => ({ ...current, followingIds: nextFollowingIds }));
+    try {
+      await updateDoc(doc(db, 'users', user.uid), { followingIds: nextFollowingIds });
+      showToast(followingSet.has(creatorId) ? `Unfollowed @${creatorName}` : `Now following @${creatorName}`);
+    } catch (error) {
+      console.error("Error updating follow state:", error);
+      setProfile((current: any) => ({ ...current, followingIds: currentFollowingIds }));
+      showToast('Could not update follow state.');
     }
   };
 
@@ -666,7 +715,7 @@ export default function App() {
   }
 
   function ProfileSuggestionItem({ sug }: ProfileSuggestionItemProps) {
-    const isFollowing = followingList.includes(sug.username);
+    const isFollowing = followingSet.has(sug.userId);
     return (
       <div className="flex items-center justify-between gap-3 py-1.5 text-xs">
         <button
@@ -692,7 +741,7 @@ export default function App() {
           </div>
         </button>
         <button 
-          onClick={() => toggleFollowCreator(sug.username)}
+          onClick={() => toggleFollowCreator(sug.userId, sug.username)}
           className={`shrink-0 text-xs font-bold transition ${
             isFollowing 
               ? 'text-zinc-500 hover:text-white' 
@@ -903,7 +952,8 @@ export default function App() {
       if (!rowType) return [];
 
       const video = event.videoId ? videosWithProfilePhotos.find((item) => item.id === event.videoId) : undefined;
-      const actorName = event.actorName || 'KehindeCW2 user';
+      const actorProfile = profilesById[event.actorId];
+      const actorName = event.actorName || actorProfile?.displayName || 'Unknown user';
       return [{
         id: event.id,
         type: rowType,
@@ -915,7 +965,7 @@ export default function App() {
         thumb: event.thumbnailUrl || video?.thumbnailUrl,
         video,
         timestamp: getCreatedAtTime(event.createdAt),
-        isFollowing: followingList.includes(actorName)
+        isFollowing: followingSet.has(event.actorId)
       }];
     }).sort((a, b) => b.timestamp - a.timestamp);
 
@@ -1465,17 +1515,17 @@ export default function App() {
                         className="text-[10px] text-zinc-400 hover:text-white font-black uppercase tracking-wider bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-800 transition"
                       >
                         View Profile
-                      </button>
-                      <button
-                        onClick={() => toggleFollowCreator(selectedCreatorName)}
-                        className={`text-[10px] px-3 py-1.5 rounded-xl font-black uppercase tracking-wider transition ${
-                          followingList.includes(selectedCreatorName)
-                            ? 'bg-zinc-900 border border-zinc-800 text-zinc-500'
-                            : 'bg-[#3f3f46] text-[#f4f4f5] border border-[#3f3f46]'
-                        }`}
-                      >
-                        {followingList.includes(selectedCreatorName) ? 'Following' : 'Follow'}
-                      </button>
+	                      </button>
+	                      <button
+	                        onClick={() => toggleFollowCreator(selectedCreatorId, selectedCreatorName)}
+	                        className={`text-[10px] px-3 py-1.5 rounded-xl font-black uppercase tracking-wider transition ${
+	                          selectedCreatorId && followingSet.has(selectedCreatorId)
+	                            ? 'bg-zinc-900 border border-zinc-800 text-zinc-500'
+	                            : 'bg-[#3f3f46] text-[#f4f4f5] border border-[#3f3f46]'
+	                        }`}
+	                      >
+	                        {selectedCreatorId && followingSet.has(selectedCreatorId) ? 'Following' : 'Follow'}
+	                      </button>
                     </div>
                   </div>
 
@@ -1500,14 +1550,14 @@ export default function App() {
                 <ProfileScreen
                   username={selectedCreatorName}
                   displayName={selectedCreatorName}
-                  role="creator"
-                  photoURL={selectedCreatorPhotoURL}
-                  videos={videosWithProfilePhotos.filter(v => v.creatorName === selectedCreatorName)}
-                  followingCount={3533}
-                  followersLabel={followingList.includes(selectedCreatorName) ? '194' : '193'}
-                  isFollowing={followingList.includes(selectedCreatorName)}
-                  onBack={() => setViewMode('home')}
-                  onFollow={() => toggleFollowCreator(selectedCreatorName)}
+	                  role="creator"
+	                  photoURL={selectedCreatorPhotoURL}
+	                  videos={videosWithProfilePhotos.filter(v => v.creatorName === selectedCreatorName)}
+	                  followingCount={selectedCreatorProfile?.followingIds?.length || 0}
+	                  followersLabel={(selectedCreatorId ? followerCountByUserId[selectedCreatorId] || 0 : 0).toLocaleString()}
+	                  isFollowing={Boolean(selectedCreatorId && followingSet.has(selectedCreatorId))}
+	                  onBack={() => setViewMode('home')}
+	                  onFollow={() => toggleFollowCreator(selectedCreatorId, selectedCreatorName)}
                   onSelectVideo={(video) => {
                     const filteredIndex = getForYouVideos().findIndex(v => v.id === video.id);
                     if (filteredIndex !== -1) setSelectedVideoIndex(filteredIndex);
@@ -1529,8 +1579,8 @@ export default function App() {
                     video.creatorName === currentUsername ||
                     video.creatorName === profile?.displayName
                   )) : []}
-                  followingCount={followingList.length}
-                  followersLabel={isCreator ? '193' : '0'}
+	                  followingCount={currentFollowingIds.length}
+	                  followersLabel={(user?.uid ? followerCountByUserId[user.uid] || 0 : 0).toLocaleString()}
                   isOwnProfile
                   isUploadingProfilePhoto={isProfilePhotoUploading}
                   isEditingName={isEditingName}

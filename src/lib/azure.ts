@@ -28,6 +28,7 @@ export interface User {
   displayName: string | null;
   role?: 'creator' | 'consumer';
   photoURL?: string;
+  followingIds?: string[];
   token?: string;
   emailVerified: boolean;
   isAnonymous: boolean;
@@ -42,6 +43,7 @@ type AuthResponse = {
     displayName?: string;
     role?: 'creator' | 'consumer';
     photoURL?: string;
+    followingIds?: string[];
   };
   token: string;
 };
@@ -189,6 +191,7 @@ const userFromAuthResponse = (response: AuthResponse, fallbackEmail: string): Us
     displayName: profile.displayName || fallbackEmail.split('@')[0] || 'KehindeCW2 user',
     role: profile.role || 'consumer',
     photoURL: profile.photoURL || '',
+    followingIds: Array.isArray(profile.followingIds) ? profile.followingIds : [],
     token: response.token,
     emailVerified: true,
     isAnonymous: false,
@@ -385,7 +388,8 @@ export async function setDoc(docRef: AzureDocumentReference, data: any, _options
         ...currentAzureUser,
         displayName: profile.displayName || currentAzureUser.displayName,
         role: profile.role || currentAzureUser.role || 'consumer',
-        photoURL: profile.photoURL ?? currentAzureUser.photoURL
+        photoURL: profile.photoURL ?? currentAzureUser.photoURL,
+        followingIds: Array.isArray(profile.followingIds) ? profile.followingIds : currentAzureUser.followingIds || []
       });
       notifyAuthChange();
     }
@@ -422,7 +426,8 @@ export async function updateDoc(docRef: AzureDocumentReference, fields: any) {
         ...currentAzureUser,
         displayName: profile.displayName || currentAzureUser.displayName,
         role: profile.role || currentAzureUser.role || 'consumer',
-        photoURL: profile.photoURL ?? currentAzureUser.photoURL
+        photoURL: profile.photoURL ?? currentAzureUser.photoURL,
+        followingIds: Array.isArray(profile.followingIds) ? profile.followingIds : currentAzureUser.followingIds || []
       });
       notifyAuthChange();
     }

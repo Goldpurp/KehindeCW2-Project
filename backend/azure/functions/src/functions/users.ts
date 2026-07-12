@@ -2,6 +2,7 @@ import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { app, HttpRequest, HttpResponseInit } from '@azure/functions';
 import { containers, nowIso } from '../shared/cosmos.js';
 import { asHttpError, requireUser, signAuthToken } from '../shared/auth.js';
+import { createActivity } from '../shared/activity.js';
 import type { UserRecord, UserRole } from '../shared/types.js';
 
 const isRole = (role: unknown): role is UserRole => role === 'creator' || role === 'consumer';
@@ -33,6 +34,16 @@ const verifyPassword = (password: string, salt: string, storedHash: string) => {
 
 const normalizeEmail = (email?: string) => email?.trim().toLowerCase() || '';
 
+const normalizeFollowingIds = (value: unknown, selfId: string) => {
+  if (!Array.isArray(value)) return undefined;
+  return Array.from(new Set(
+    value
+      .filter((id): id is string => typeof id === 'string')
+      .map((id) => id.trim())
+      .filter((id) => id && id !== selfId)
+  ));
+};
+
 const normalizeUser = (userId: string, body: Partial<UserRecord>): UserRecord => {
   const now = nowIso();
   return {
@@ -43,11 +54,30 @@ const normalizeUser = (userId: string, body: Partial<UserRecord>): UserRecord =>
     role: isRole(body.role) ? body.role : 'consumer',
     bio: body.bio || '',
     photoURL: body.photoURL || '',
+    followingIds: normalizeFollowingIds(body.followingIds, userId) || [],
     passwordHash: body.passwordHash,
     passwordSalt: body.passwordSalt,
     createdAt: body.createdAt || now,
     updatedAt: now
   };
+};
+
+const createFollowActivities = async (before: UserRecord, after: UserRecord) => {
+  const previous = new Set(before.followingIds || []);
+  const additions = (after.followingIds || []).filter((id) => !previous.has(id));
+
+  await Promise.all(additions.map(async (creatorId) => {
+    const { resource: creator } = await containers.users.item(creatorId, creatorId).read<UserRecord>();
+    if (!creator || creator.id === after.id) return;
+
+    await createActivity({
+      recipientId: creator.id,
+      actorId: after.id,
+      actorName: after.displayName,
+      type: 'follow',
+      text: 'started following you'
+    });
+  }));
 };
 
 export async function listUsers(request: HttpRequest): Promise<HttpResponseInit> {
@@ -79,11 +109,8 @@ export async function listUsers(request: HttpRequest): Promise<HttpResponseInit>
 
 export async function getUser(request: HttpRequest): Promise<HttpResponseInit> {
   try {
-    const current = await requireUser(request);
+    await requireUser(request);
     const userId = request.params.userId;
-    if (current.id !== userId) {
-      return { status: 403, jsonBody: { error: 'Cannot view another account profile.' } };
-    }
 
     const { resource } = await containers.users.item(userId, userId).read<UserRecord>();
     if (!resource) return { status: 404, jsonBody: { error: 'User not found.' } };
@@ -110,10 +137,13 @@ export async function upsertUser(request: HttpRequest): Promise<HttpResponseInit
       displayName: body.displayName?.trim() || existing.displayName,
       bio: body.bio ?? existing.bio,
       photoURL: body.photoURL ?? existing.photoURL,
+      followingIds: normalizeFollowingIds(body.followingIds, userId) ?? existing.followingIds ?? [],
       updatedAt: nowIso()
     };
     const { resource } = await containers.users.item(userId, userId).replace<UserRecord>(user);
-    return { status: 200, jsonBody: publicUser(resource || user) };
+    const saved = resource || user;
+    await createFollowActivities(existing, saved);
+    return { status: 200, jsonBody: publicUser(saved) };
   } catch (error) {
     return asHttpError(error);
   }
@@ -138,11 +168,14 @@ export async function updateUser(request: HttpRequest): Promise<HttpResponseInit
       role: existing.role,
       bio: body.bio ?? existing.bio,
       photoURL: body.photoURL ?? existing.photoURL,
+      followingIds: normalizeFollowingIds(body.followingIds, userId) ?? existing.followingIds ?? [],
       updatedAt: nowIso()
     };
 
     const { resource } = await containers.users.item(userId, userId).replace<UserRecord>(user);
-    return { jsonBody: publicUser(resource || user) };
+    const saved = resource || user;
+    await createFollowActivities(existing, saved);
+    return { jsonBody: publicUser(saved) };
   } catch (error) {
     return asHttpError(error);
   }
@@ -192,6 +225,7 @@ export async function signUp(request: HttpRequest): Promise<HttpResponseInit> {
       role: isRole(body.role) ? body.role : 'consumer',
       bio: isRole(body.role) && body.role === 'creator' ? 'Creator account' : 'Consumer account',
       photoURL: '',
+      followingIds: [],
       passwordHash: passwordHash(password, salt),
       passwordSalt: salt,
       createdAt: now,

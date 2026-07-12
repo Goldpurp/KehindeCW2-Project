@@ -10,7 +10,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Copy,
   Heart, 
-  Lock,
   MessageCircle,
   MessageSquare, 
   Play, 
@@ -18,7 +17,6 @@ import {
   FolderOpen,
   Send,
   Share2,
-  Users,
   X,
   Eye
 } from 'lucide-react';
@@ -185,7 +183,7 @@ function FeedPostCard({
     setIsShareOpen(true);
   };
 
-  const handleShareOption = async (optionType: 'whatsapp' | 'twitter' | 'telegram' | 'followers' | 'none' | 'copy') => {
+  const handleShareOption = async (optionType: 'whatsapp' | 'twitter' | 'telegram' | 'copy') => {
     const shareUrl = `${window.location.origin}/?video=${video.id}`;
     let success = true;
 
@@ -209,10 +207,6 @@ function FeedPostCard({
       const tgUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent("Check out this stream on KehindeCW2 Project!")}`;
       window.open(tgUrl, '_blank');
       onShowToast?.("Opening Telegram to share!");
-    } else if (optionType === 'followers') {
-      onShowToast?.("Broadcasted stream to your followers.");
-    } else if (optionType === 'none') {
-      onShowToast?.("Stream kept private / shared to none.");
     }
 
     if (success) {
@@ -495,27 +489,6 @@ function FeedPostCard({
                   >
                     <Send size={17} />
                     <span>Telegram</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* KehindeCW2 Project Audience */}
-              <div className="space-y-1.5 text-left">
-                <span className="text-[8px] uppercase tracking-wider text-zinc-500 font-mono font-bold block">KehindeCW2 Audience</span>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => handleShareOption('followers')}
-                    className="p-2 bg-zinc-900 hover:bg-zinc-850 rounded-xl text-[9px] font-black text-white border border-zinc-850 flex flex-col items-center gap-1.5 transition"
-                  >
-                    <Users size={17} />
-                    <span>Followers</span>
-                  </button>
-                  <button
-                    onClick={() => handleShareOption('none')}
-                    className="p-2 bg-zinc-900 hover:bg-zinc-850 rounded-xl text-[9px] font-black text-white border border-zinc-850 flex flex-col items-center gap-1.5 transition"
-                  >
-                    <Lock size={17} />
-                    <span>None</span>
                   </button>
                 </div>
               </div>
