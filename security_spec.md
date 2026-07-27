@@ -1,30 +1,49 @@
-# Security Specification: Video Sharing Platform
+# Security Specification
 
-This document outlines the security architecture, invariants, and threat analysis for the Azure Functions API backed by Cosmos DB and Blob Storage.
+## Trust Model
 
-## 1. Data Invariants
+The browser is untrusted. Hiding controls is a usability decision; every sensitive decision is repeated by Azure Functions using a verified identity and the current Cosmos DB user record.
 
-* **Identity Verification**: Standard users cannot modify or set roles of other users, and they cannot self-promote to 'creator' during profile creation unless verified. In our app, we allow toggling creator status via standard profile management but enforce rules to avoid identity spoofing.
-* **Creator Exclusivity**: Only users who are registered with `role == 'creator'` in their user record can create or manage videos through the API.
-* **Read Boundaries**: Consumers can read videos to scroll/search and can comment/rate. Only creator users can upload or delete their own videos.
-* **Rating & Likes Sanitization**: Ratings are restricted between 1 and 5. Users can only edit/add their own ratings inside the `ratings` map (using their UID as the key). Likes are restricted to a string list of user UIDs, and users can only add/remove their own UID.
-* **Immutable Fields**: `createdAt`, `creatorId`, `creatorName` in a video are immutable once created. `userId`, `videoId` in comments are immutable.
+## Identity Controls
 
-## 2. The "Dirty Dozen" Payloads (Threat Vectors)
+- Passwords are salted and hashed with scrypt before persistence.
+- Authentication returns a seven-day HMAC-SHA256 bearer token.
+- The token contains only the user identifier and expiry.
+- `AUTH_TOKEN_SECRET` is required and supplied through Azure application settings.
+- Protected requests resolve the user from Cosmos DB, so deleted accounts and role changes take effect immediately.
+- Public registration creates consumer accounts.
+- Creator registration requires the server-side `CREATOR_SIGNUP_CODE`; the code is never committed to source control.
 
-1. **Privilege Escalation**: User tries to register or update their user document with role "admin" or create a creator account without signing in.
-2. **Video Spoofing**: Standard consumer attempts to write a video document to the `videos` collection.
-3. **Creator Identity Takeover**: Creator tries to upload a video but sets `creatorId` to another user's UID.
-4. **Vandalism (Comment Spoofing)**: User attempts to post a comment under another user's `userName` or `userId`.
-5. **Rating Poisoning**: User updates a video's rating map with a score of `99` (violating 1-5 boundary).
-6. **Denial of Wallet (ID Poisoning)**: User writes a video with a 10KB string of junk characters as the document ID.
-7. **Timestamp Tampering**: Creator sets `createdAt` for a new video to a date in the future instead of `request.time`.
-8. **Malicious Like Hijacking**: User tries to add another user's UID to the `likes` list of a video.
-9. **Spam Comments**: Non-signed-in anonymous user tries to write a comment under a video.
-10. **Video Deletion Hijack**: Standard user tries to delete a video uploaded by a creator.
-11. **Immortality Field Update**: Creator tries to change the original `createdAt` timestamp of a video post.
-12. **Comment Vandalism**: User tries to update or delete someone else's comment.
+## Authorization Invariants
 
-## 3. The Test Runner Overview
+- Only a resolved creator can create videos.
+- Only the original creator can edit or delete a video.
+- Producer, publisher, creator ID and creator name are assigned by the API.
+- Consumers can read, search, comment, like, share and submit one 1-5 rating per video.
+- Creator accounts cannot rate content, preventing uploader self-rating.
+- A comment owner can update or delete their own comment; video ownership is checked for moderation behavior where supported.
+- Users can update only their own profile and cannot alter their persisted role.
+- Activity queries are scoped to the authenticated recipient.
 
-All test scenarios should run against the Azure Functions API using seeded Cosmos DB records. Rejected operations should return `401`, `403`, or `400` depending on whether the request is unauthenticated, unauthorized, or invalid.
+## Abuse Cases and Expected Responses
+
+| Attempt | Expected control |
+| --- | --- |
+| Anonymous catalogue request | `401 Sign in required` |
+| Consumer video upload | `403 Creator account required` |
+| Creator enrolment without invite | `403 valid invitation code required` |
+| Client-supplied producer or publisher | ignored and replaced with authenticated creator identity |
+| Rating outside 1-5 | `400 Rating must be 1 to 5` |
+| Creator rating | `403 Only consumer accounts can rate` |
+| Delete another creator's upload | `403 Only the creator can delete` |
+| Modify another profile | `403 Cannot update another account` |
+| Invalid media byte range | `416 Range Not Satisfiable` |
+
+## Residual Risks
+
+- Custom HMAC authentication does not provide MFA, recovery or managed key rotation.
+- Data-URL uploads require explicit payload limits at the gateway for production use.
+- Rate limiting and automated abuse detection are not yet configured.
+- Concurrent interaction writes should use optimistic concurrency at larger scale.
+
+The production roadmap moves identity to Microsoft Entra External ID, direct uploads to scoped SAS URLs, and traffic controls to Front Door or API Management.

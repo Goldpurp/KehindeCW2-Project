@@ -213,6 +213,7 @@ export async function signInWithEmailAndPassword(_authInstance: unknown, email: 
 
   writeStoredUser(user);
   notifyAuthChange();
+  notifyDataChange();
   return { user };
 }
 
@@ -220,7 +221,7 @@ export async function createUserWithEmailAndPassword(
   _authInstance: unknown,
   email: string,
   password: string,
-  profile: { displayName?: string; role?: 'creator' | 'consumer' } = {}
+  profile: { displayName?: string; role?: 'creator' | 'consumer'; creatorCode?: string } = {}
 ) {
   const uid = stableUserId(email);
   const fallbackEmail = email.trim().toLowerCase();
@@ -231,7 +232,8 @@ export async function createUserWithEmailAndPassword(
       email: fallbackEmail,
       password,
       displayName: profile.displayName?.trim() || fallbackEmail.split('@')[0] || 'KehindeCW2 user',
-      role: profile.role || 'consumer'
+      role: profile.role || 'consumer',
+      creatorCode: profile.creatorCode?.trim() || undefined
     })
   });
   const user = userFromAuthResponse(response, fallbackEmail);
@@ -245,6 +247,7 @@ export async function createUserWithEmailAndPassword(
 export async function signOut(_authInstance: unknown) {
   writeStoredUser(null);
   notifyAuthChange();
+  notifyDataChange();
 }
 
 export async function updateProfile(userInstance: User, profileUpdate: { displayName?: string; photoURL?: string }) {
@@ -364,7 +367,8 @@ export async function getDocs(queryOrColRef: AzureQuery | AzureCollectionReferen
   if (collectionName === 'users') {
     list = await apiRequest('/users');
   } else if (collectionName === 'videos') {
-    list = await apiRequest('/videos');
+    const response = await apiRequest<any>('/videos?pageSize=50');
+    list = Array.isArray(response) ? response : response?.items || [];
   } else if (collectionName === 'activities') {
     list = await apiRequest('/activities');
   } else if (path.includes('comments')) {

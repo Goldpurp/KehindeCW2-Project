@@ -124,6 +124,7 @@ export default function App() {
   const [authPassword, setAuthPassword] = useState('');
   const [authName, setAuthName] = useState('');
   const [authRole, setAuthRole] = useState<'consumer' | 'creator'>('consumer');
+  const [creatorInviteCode, setCreatorInviteCode] = useState('');
   const [authError, setAuthError] = useState('');
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
@@ -563,7 +564,8 @@ export default function App() {
       const formattedName = authName.trim() || 'KehindeCW2 User';
       const userCredential = await createUserWithEmailAndPassword(auth, authEmail, authPassword, {
         displayName: formattedName,
-        role: authRole
+        role: authRole,
+        creatorCode: authRole === 'creator' ? creatorInviteCode : undefined
       });
       const newProfile = {
         uid: userCredential.user.uid,
@@ -1205,6 +1207,22 @@ export default function App() {
                         })}
                       </div>
                     </div>
+
+                    {authRole === 'creator' && (
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-[#f4f4f5] uppercase tracking-wider font-mono">Creator Invite Code</label>
+                        <input
+                          type="password"
+                          required
+                          placeholder="Invitation code"
+                          value={creatorInviteCode}
+                          onChange={(e) => setCreatorInviteCode(e.target.value)}
+                          autoComplete="one-time-code"
+                          className="w-full px-4 py-3 bg-black border border-[#3f3f46] rounded-xl focus:border-[#d4d4d8] focus:outline-none text-base sm:text-sm text-white placeholder-zinc-700 transition"
+                        />
+                        <p className="text-[10px] font-semibold text-zinc-600">Creator access is invitation only.</p>
+                      </div>
+                    )}
                   </>
                 )}
 

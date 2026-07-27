@@ -6,7 +6,10 @@
   "scripts": {
     "build": "tsc",
     "start": "func start",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "npm run build && node --test dist/shared/*.test.js",
+    "verify": "npm run lint && npm run test",
+    "audit:prod": "npm audit --omit=dev --audit-level=high"
   },
   "engines": {
     "node": "22"

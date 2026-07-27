@@ -2,6 +2,7 @@ import { app, HttpRequest, HttpResponseInit } from '@azure/functions';
 import { containers } from '../shared/cosmos.js';
 import { asHttpError, requireUser } from '../shared/auth.js';
 import { createActivity } from '../shared/activity.js';
+import { ratingPolicyError } from '../shared/policies.js';
 import type { VideoRecord } from '../shared/types.js';
 
 export async function rateVideo(request: HttpRequest): Promise<HttpResponseInit> {
@@ -17,12 +18,8 @@ export async function rateVideo(request: HttpRequest): Promise<HttpResponseInit>
 
     const { resource: video } = await containers.videos.item(videoId, videoId).read<VideoRecord>();
     if (!video) return { status: 404, jsonBody: { error: 'Video not found.' } };
-    if (user.role !== 'consumer') {
-      return { status: 403, jsonBody: { error: 'Only consumer accounts can rate videos.' } };
-    }
-    if (user.id === video.creatorId) {
-      return { status: 403, jsonBody: { error: 'Uploaders cannot rate their own videos.' } };
-    }
+    const policyError = ratingPolicyError(user, video);
+    if (policyError) return { status: 403, jsonBody: { error: policyError } };
 
     video.ratings = { ...video.ratings, [user.id]: rating };
     const scores = Object.values(video.ratings);

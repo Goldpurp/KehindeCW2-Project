@@ -1,4 +1,5 @@
 import { BlobServiceClient } from '@azure/storage-blob';
+import { parseByteRange } from './policies.js';
 
 const storageConnectionString = process.env.AzureWebJobsStorage;
 const containerName = process.env.VIDEO_STORAGE_CONTAINER || 'videos';
@@ -57,16 +58,36 @@ export const uploadDataUrl = async (folder: string, fileName: string, dataUrl?: 
   };
 };
 
-export const downloadBlob = async (blobName: string) => {
+export const downloadBlob = async (blobName: string, rangeHeader: string | null = null) => {
   const blob = container.getBlobClient(blobName);
   const exists = await blob.exists();
   if (!exists) return null;
 
   const properties = await blob.getProperties();
-  const buffer = await blob.downloadToBuffer();
+  const totalBytes = Number(properties.contentLength || 0);
+  const requestedRange = parseByteRange(rangeHeader, totalBytes);
+
+  if (requestedRange.kind === 'invalid') {
+    return {
+      invalidRange: true as const,
+      totalBytes,
+      contentType: properties.contentType || 'application/octet-stream'
+    };
+  }
+
+  const buffer = requestedRange.kind === 'range'
+    ? await blob.downloadToBuffer(
+      requestedRange.start,
+      requestedRange.end - requestedRange.start + 1
+    )
+    : await blob.downloadToBuffer();
+
   return {
+    invalidRange: false as const,
     buffer,
-    contentType: properties.contentType || 'application/octet-stream'
+    contentType: properties.contentType || 'application/octet-stream',
+    totalBytes,
+    range: requestedRange.kind === 'range' ? requestedRange : null
   };
 };
 

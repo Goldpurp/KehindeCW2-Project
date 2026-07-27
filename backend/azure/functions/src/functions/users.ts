@@ -13,6 +13,7 @@ type AuthBody = {
   password?: string;
   displayName?: string;
   role?: UserRole;
+  creatorCode?: string;
 };
 
 type PublicUser = Omit<UserRecord, 'passwordHash' | 'passwordSalt'>;
@@ -30,6 +31,12 @@ const verifyPassword = (password: string, salt: string, storedHash: string) => {
   const candidate = Buffer.from(passwordHash(password, salt), 'hex');
   const stored = Buffer.from(storedHash, 'hex');
   return candidate.length === stored.length && timingSafeEqual(candidate, stored);
+};
+
+const secureStringMatch = (provided: string, expected: string) => {
+  const providedBuffer = Buffer.from(provided);
+  const expectedBuffer = Buffer.from(expected);
+  return providedBuffer.length === expectedBuffer.length && timingSafeEqual(providedBuffer, expectedBuffer);
 };
 
 const normalizeEmail = (email?: string) => email?.trim().toLowerCase() || '';
@@ -201,6 +208,7 @@ export async function signUp(request: HttpRequest): Promise<HttpResponseInit> {
     const email = normalizeEmail(body.email);
     const password = body.password || '';
     const uid = body.uid?.trim();
+    const requestedRole = isRole(body.role) ? body.role : 'consumer';
 
     if (!uid || !email || !password) {
       return { status: 400, jsonBody: { error: 'Email and password are required.' } };
@@ -208,6 +216,14 @@ export async function signUp(request: HttpRequest): Promise<HttpResponseInit> {
 
     if (password.length < 6) {
       return { status: 400, jsonBody: { error: 'Password must be at least 6 characters.' } };
+    }
+
+    if (requestedRole === 'creator') {
+      const requiredCode = process.env.CREATOR_SIGNUP_CODE?.trim() || '';
+      const providedCode = body.creatorCode?.trim() || '';
+      if (!requiredCode || !providedCode || !secureStringMatch(providedCode, requiredCode)) {
+        return { status: 403, jsonBody: { error: 'A valid creator invitation code is required.' } };
+      }
     }
 
     const { resource: existing } = await containers.users.item(uid, uid).read<UserRecord>();
@@ -222,8 +238,8 @@ export async function signUp(request: HttpRequest): Promise<HttpResponseInit> {
       uid,
       email,
       displayName: body.displayName?.trim() || email.split('@')[0] || 'KehindeCW2 user',
-      role: isRole(body.role) ? body.role : 'consumer',
-      bio: isRole(body.role) && body.role === 'creator' ? 'Creator account' : 'Consumer account',
+      role: requestedRole,
+      bio: requestedRole === 'creator' ? 'Creator account' : 'Consumer account',
       photoURL: '',
       followingIds: [],
       passwordHash: passwordHash(password, salt),

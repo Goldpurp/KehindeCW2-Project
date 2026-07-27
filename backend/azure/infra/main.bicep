@@ -1,6 +1,12 @@
 param appName string = 'kehindecw2'
 param location string = resourceGroup().location
 
+@secure()
+param authTokenSecret string
+
+@secure()
+param creatorSignupCode string
+
 var normalizedName = toLower(replace(appName, '-', ''))
 var storageName = take('${normalizedName}st${uniqueString(resourceGroup().id)}', 24)
 var cosmosName = '${appName}-cosmos-${uniqueString(resourceGroup().id)}'
@@ -173,6 +179,14 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'VIDEO_STORAGE_CONTAINER'
           value: 'videos'
+        }
+        {
+          name: 'AUTH_TOKEN_SECRET'
+          value: authTokenSecret
+        }
+        {
+          name: 'CREATOR_SIGNUP_CODE'
+          value: creatorSignupCode
         }
       ]
     }

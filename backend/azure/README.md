@@ -1,73 +1,51 @@
 # Azure Backend
 
-This option uses Azure Functions for the API, Cosmos DB for app data, and Blob Storage for uploaded video files.
+The backend uses Azure Functions for REST service logic, Cosmos DB for structured application records, Blob Storage for private video objects and Application Insights for telemetry.
 
-## Services
-
-- Azure Static Web Apps or App Service for the frontend.
-- Azure Functions for API routes.
-- Azure Cosmos DB SQL API for users, videos, comments, and activities.
-- Azure Blob Storage for video and thumbnail files.
-- Optional Easy Auth or Firebase/Auth0 token verification in front of Functions.
-
-## Deploy Infrastructure
+## Infrastructure Deployment
 
 ```bash
 az deployment group create \
   --resource-group <resource-group> \
-  --template-file infra/main.bicep \
-  --parameters appName=kehindecw2 location=eastus
+  --template-file backend/azure/infra/main.bicep \
+  --parameters appName=kehindecw2 \
+  --parameters authTokenSecret='<strong-random-secret>' \
+  --parameters creatorSignupCode='<private-invitation-code>'
 ```
 
-## Front Door / CDN Edge
+Both secret parameters are marked secure by Bicep and become Function App settings. They must not be committed.
 
-Azure now creates new CDN-style edge profiles through Azure Front Door Standard/Premium. The helper script below creates:
+## Authentication Contract
 
-- Front Door profile
-- Front Door endpoint
-- Origin group
-- Function App origin
-- `/api/*` route to the KehindeCW2 Project API
+- `POST /api/auth/signup` accepts email/password registration. Consumer registration is public; creator registration also requires `creatorCode`.
+- `POST /api/auth/signin` returns the public user profile and a signed bearer token.
+- Protected routes require `Authorization: Bearer <token>`.
+- The token is verified and then resolved to a current Cosmos DB user before role decisions.
+- Azure Easy Auth claims are also supported when the Function App is later placed behind that identity layer.
 
-```bash
-bash backend/azure/create-frontdoor-cdn.sh
-```
-
-The current Azure for Students subscription rejects Front Door resources. Run this from an eligible paid subscription, then set `VITE_AZURE_API_BASE_URL` to the printed `https://<front-door-host>/api` value.
+Legacy `x-user-*` headers are disabled unless the Function App explicitly sets `ALLOW_UNSAFE_HEADER_AUTH=true`; this setting must remain absent in production.
 
 ## API Routes
 
+- `POST /api/auth/signup`
+- `POST /api/auth/signin`
 - `GET /api/users`
-- `GET /api/users/{userId}`
-- `PUT /api/users/{userId}`
-- `PATCH /api/users/{userId}`
-- `DELETE /api/users/{userId}`
-- `GET /api/videos`
-- `POST /api/videos`
-- `GET /api/videos/{videoId}`
-- `PATCH /api/videos/{videoId}`
-- `DELETE /api/videos/{videoId}`
-- `GET /api/videos/{videoId}/media`
+- `GET/PATCH/DELETE /api/users/{userId}`
+- `GET /api/videos?pageSize=24&continuation=<token>`
+- `POST /api/videos` - creator only
+- `GET/PATCH/DELETE /api/videos/{videoId}`
+- `GET /api/videos/{videoId}/media` - supports HTTP Range
 - `GET /api/videos/{videoId}/thumbnail`
 - `POST /api/videos/{videoId}/likes`
 - `POST /api/videos/{videoId}/views`
 - `POST /api/videos/{videoId}/shares`
-- `GET /api/videos/{videoId}/comments`
-- `POST /api/videos/{videoId}/comments`
-- `PATCH /api/videos/{videoId}/comments/{commentId}`
-- `DELETE /api/videos/{videoId}/comments/{commentId}`
-- `POST /api/videos/{videoId}/comments/{commentId}/likes`
 - `POST /api/videos/{videoId}/ratings`
+- `GET/POST /api/videos/{videoId}/comments`
+- `PATCH/DELETE /api/videos/{videoId}/comments/{commentId}`
+- `POST /api/videos/{videoId}/comments/{commentId}/likes`
 - `GET /api/activities`
 - `PATCH /api/activities/{activityId}`
 
-## Auth Contract
+## Front Door
 
-The Functions read identity from headers so the backend can work with Azure Easy Auth, Firebase Auth verification middleware, or a gateway:
-
-- `x-user-id`
-- `x-user-email`
-- `x-user-name`
-- `x-user-role`: `creator` or `consumer`
-
-In production, replace this header trust with Easy Auth claims or verified JWT parsing.
+`create-frontdoor-cdn.sh` creates a Standard Azure Front Door profile, endpoint, origin group and `/api/*` route on an eligible subscription. Azure for Students currently rejects this resource, so the coursework deployment documents Render CDN delivery and the Front Door migration path honestly.

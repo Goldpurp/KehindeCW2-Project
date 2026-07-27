@@ -3,6 +3,13 @@ import { containers, createId, nowIso } from '../shared/cosmos.js';
 import { asHttpError, requireCreator, requireUser } from '../shared/auth.js';
 import { createActivity } from '../shared/activity.js';
 import { deleteBlobIfExists, downloadBlob, uploadDataUrl } from '../shared/storage.js';
+import {
+  deriveOwnedVideoMetadata,
+  normalizePageSize,
+  normalizeViewedBy,
+  recordUniqueView,
+  VALID_AGE_RATINGS
+} from '../shared/policies.js';
 import type { AgeRating, VideoRecord } from '../shared/types.js';
 
 type VideoCreateBody = Partial<VideoRecord> & {
@@ -10,8 +17,7 @@ type VideoCreateBody = Partial<VideoRecord> & {
   thumbnailDataUrl?: string;
 };
 
-const validAges: AgeRating[] = ['All Ages', 'G', 'PG', 'PG-13', 'R', '11+', '16+', '18+'];
-const editableFields = ['title', 'publisher', 'producer', 'genre', 'ageRating', 'thumbnailUrl'] as const;
+const editableFields = ['title', 'genre', 'ageRating', 'thumbnailUrl'] as const;
 
 const readJson = async <T>(request: HttpRequest) => (await request.json()) as T;
 
@@ -22,12 +28,8 @@ const mediaUrl = (request: HttpRequest, videoId: string, kind: 'media' | 'thumbn
 
 const isDataUrl = (value?: string) => Boolean(value?.startsWith('data:'));
 
-const normalizedViewedBy = (video: VideoRecord) => (
-  Array.from(new Set((Array.isArray(video.viewedBy) ? video.viewedBy : []).filter(Boolean)))
-);
-
 const publicVideo = (video: VideoRecord): VideoRecord => {
-  const viewedBy = normalizedViewedBy(video);
+  const viewedBy = normalizeViewedBy(video.viewedBy);
   return {
     ...video,
     viewedBy,
@@ -61,7 +63,24 @@ export async function listVideos(request: HttpRequest): Promise<HttpResponseInit
     }
 
     const query = `SELECT * FROM c ${filters.length ? `WHERE ${filters.join(' AND ')}` : ''} ORDER BY c.createdAt DESC`;
-    const { resources } = await containers.videos.items.query<VideoRecord>({ query, parameters }).fetchAll();
+    const querySpec = { query, parameters };
+    const paginationRequested = request.query.has('pageSize') || request.query.has('continuation');
+
+    if (paginationRequested) {
+      const iterator = containers.videos.items.query<VideoRecord>(querySpec, {
+        maxItemCount: normalizePageSize(request.query.get('pageSize')),
+        continuationToken: request.query.get('continuation') || undefined
+      });
+      const page = await iterator.fetchNext();
+      return {
+        jsonBody: {
+          items: page.resources.map(publicVideo),
+          continuationToken: page.continuationToken || null
+        }
+      };
+    }
+
+    const { resources } = await containers.videos.items.query<VideoRecord>(querySpec).fetchAll();
     return { jsonBody: resources.map(publicVideo) };
   } catch (error) {
     return asHttpError(error);
@@ -86,13 +105,19 @@ export async function createVideo(request: HttpRequest): Promise<HttpResponseIni
     const body = await readJson<VideoCreateBody>(request);
     const videoSource = body.videoDataUrl || body.videoUrl;
 
-    if (!body.title || !body.publisher || !body.producer || !body.genre || !videoSource) {
+    if (!body.title || !body.genre || !videoSource) {
       return { status: 400, jsonBody: { error: 'Missing video details.' } };
     }
 
-    if (!validAges.includes(body.ageRating as AgeRating)) {
+    if (!VALID_AGE_RATINGS.includes(body.ageRating as AgeRating)) {
       return { status: 400, jsonBody: { error: 'Invalid age rating.' } };
     }
+
+    const metadata = deriveOwnedVideoMetadata(user, {
+      title: body.title,
+      genre: body.genre,
+      ageRating: body.ageRating as AgeRating
+    });
 
     const id = body.id?.trim() || createId('vid');
     const videoUpload = isDataUrl(videoSource)
@@ -104,11 +129,7 @@ export async function createVideo(request: HttpRequest): Promise<HttpResponseIni
 
     const video: VideoRecord = {
       id,
-      title: body.title.trim(),
-      publisher: body.publisher.trim(),
-      producer: body.producer.trim(),
-      genre: body.genre.trim(),
-      ageRating: body.ageRating as AgeRating,
+      ...metadata,
       videoUrl: videoUpload ? mediaUrl(request, id, 'media') : videoSource,
       thumbnailUrl: thumbnailUpload ? mediaUrl(request, id, 'thumbnail') : body.thumbnailUrl || '',
       storagePath: videoUpload?.path || body.storagePath,
@@ -161,7 +182,7 @@ export async function updateVideo(request: HttpRequest): Promise<HttpResponseIni
       }
     }
 
-    if (!validAges.includes(video.ageRating)) {
+    if (!VALID_AGE_RATINGS.includes(video.ageRating)) {
       return { status: 400, jsonBody: { error: 'Invalid age rating.' } };
     }
 
@@ -237,11 +258,7 @@ export async function trackView(request: HttpRequest): Promise<HttpResponseInit>
     const { resource: video } = await containers.videos.item(videoId, videoId).read<VideoRecord>();
     if (!video) return { status: 404, jsonBody: { error: 'Video not found.' } };
 
-    const viewedBy = normalizedViewedBy(video);
-
-    if (user.id !== video.creatorId && !viewedBy.includes(user.id)) {
-      viewedBy.push(user.id);
-    }
+    const viewedBy = recordUniqueView(video.viewedBy, user.id, video.creatorId);
 
     video.viewedBy = viewedBy;
     video.viewCount = viewedBy.length;
@@ -275,13 +292,33 @@ export async function getMedia(request: HttpRequest): Promise<HttpResponseInit> 
     const { resource: video } = await containers.videos.item(videoId, videoId).read<VideoRecord>();
     if (!video?.storagePath) return { status: 404, jsonBody: { error: 'Media not found.' } };
 
-    const media = await downloadBlob(video.storagePath);
+    const media = await downloadBlob(video.storagePath, request.headers.get('range'));
     if (!media) return { status: 404, jsonBody: { error: 'Media not found.' } };
 
+    if (media.invalidRange) {
+      return {
+        status: 416,
+        headers: {
+          'Accept-Ranges': 'bytes',
+          'Content-Range': `bytes */${media.totalBytes}`
+        }
+      };
+    }
+
+    const contentLength = media.range
+      ? media.range.end - media.range.start + 1
+      : media.totalBytes;
+
     return {
+      status: media.range ? 206 : 200,
       body: media.buffer as any,
       headers: {
         'Content-Type': media.contentType,
+        'Content-Length': String(contentLength),
+        'Accept-Ranges': 'bytes',
+        ...(media.range ? {
+          'Content-Range': `bytes ${media.range.start}-${media.range.end}/${media.totalBytes}`
+        } : {}),
         'Cache-Control': 'public, max-age=31536000, immutable'
       }
     };
@@ -298,6 +335,7 @@ export async function getThumbnail(request: HttpRequest): Promise<HttpResponseIn
 
     const thumbnail = await downloadBlob(video.thumbnailPath);
     if (!thumbnail) return { status: 404, jsonBody: { error: 'Thumbnail not found.' } };
+    if (thumbnail.invalidRange) return { status: 416 };
 
     return {
       body: thumbnail.buffer as any,

@@ -31,6 +31,8 @@ The Function App has these app setting names configured:
 - `COSMOS_DATABASE_NAME`
 - `VIDEO_STORAGE_CONTAINER`
 - `VIDEO_STORAGE_ACCOUNT`
+- `AUTH_TOKEN_SECRET`
+- `CREATOR_SIGNUP_CODE`
 
 The secret values stay in Azure and are intentionally not stored in this repo.
 
@@ -75,3 +77,11 @@ After that script succeeds, set the frontend API base URL to the printed `https:
   - Creator self-views are ignored.
   - Legacy inflated `viewCount` values are no longer trusted by API responses unless backed by real `viewedBy` entries.
   - The deployed `/api/videos` route returns `401 Sign in required` without an auth token, confirming the live API is enforcing authentication.
+- On 2026-07-27, the verified backend revision was deployed with Azure CLI zip deployment ID `40b83baafe194ac189dd7869593c3bb5`.
+  - `AUTH_TOKEN_SECRET` and `CREATOR_SIGNUP_CODE` were rotated and stored only as Azure app settings; the creator code is also stored in the developer Mac login keychain under `KehindeCW2 Creator Signup Code`.
+  - Public signup creates consumer accounts; creator signup without the server invitation returns `403`.
+  - Producer, publisher and ownership metadata are derived from the authenticated creator.
+  - `GET /api/videos?pageSize=1` returns a bounded page object with one item.
+  - A media request with `Range: bytes=0-31` returns `206`, `Accept-Ranges: bytes` and a valid `Content-Range` header.
+  - The production dependency audit reports zero known vulnerabilities.
+  - The live smoke suite confirms anonymous access `401`, consumer upload `403`, creator self-rating `403`, and correct persisted roles.

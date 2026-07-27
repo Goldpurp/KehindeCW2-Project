@@ -5,6 +5,8 @@
     "FUNCTIONS_WORKER_RUNTIME": "node",
     "COSMOS_CONNECTION_STRING": "<cosmos-connection-string>",
     "COSMOS_DATABASE_NAME": "kehindecw2",
-    "VIDEO_STORAGE_CONTAINER": "videos"
+    "VIDEO_STORAGE_CONTAINER": "videos",
+    "AUTH_TOKEN_SECRET": "<strong-random-secret>",
+    "CREATOR_SIGNUP_CODE": "<private-creator-invitation-code>"
   }
 }

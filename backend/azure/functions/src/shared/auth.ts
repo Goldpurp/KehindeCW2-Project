@@ -11,12 +11,11 @@ type TokenPayload = {
   exp: number;
 };
 
-const authSecret = () => (
-  process.env.AUTH_TOKEN_SECRET ||
-  process.env.COSMOS_CONNECTION_STRING ||
-  process.env.AzureWebJobsStorage ||
-  'kehindecw2-local-dev-secret'
-);
+const authSecret = () => {
+  const secret = process.env.AUTH_TOKEN_SECRET;
+  if (!secret) throw new Error('AUTH_TOKEN_SECRET is required');
+  return secret;
+};
 
 const toBase64Url = (value: string) => Buffer.from(value, 'utf8').toString('base64url');
 

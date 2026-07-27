@@ -1,99 +1,23 @@
-# KehindeCW2 Project Backend Schema
+# Cosmos DB Data Model
 
-## users/{uid}
+## `users` container - partition key `/id`
 
-```ts
-type UserProfile = {
-  uid: string;
-  email: string;
-  displayName: string;
-  role: "creator" | "consumer";
-  photoURL?: string;
-  createdAt: Timestamp;
-  updatedAt?: Timestamp;
-};
-```
+Profiles persist email, display name, immutable role, profile photo, follow identifiers, scrypt password material and ISO timestamps. API responses remove password hash and salt.
 
-Rules:
+## `videos` container - partition key `/id`
 
-- Users can read signed-in profiles.
-- Users can create and update only their own profile.
-- A consumer cannot upload videos.
-- Creator role should be set at sign-up, admin tooling, or custom claim assignment.
+Video records persist caption/title, genre, validated age rating, authenticated producer/publisher identity, Blob paths, creator identity, likes, per-consumer ratings, unique viewer IDs, aggregate rating, view count and share count.
 
-## videos/{videoId}
+The API owns `creatorId`, `creatorName`, `producer`, `publisher` and timestamps. The client cannot replace those values.
 
-```ts
-type Video = {
-  id: string;
-  title: string;
-  publisher: string;
-  producer: string;
-  genre: string;
-  ageRating: "All Ages" | "G" | "PG" | "PG-13" | "R" | "11+" | "16+" | "18+";
-  videoUrl: string;
-  thumbnailUrl: string;
-  storagePath?: string;
-  thumbnailPath?: string;
-  creatorId: string;
-  creatorName: string;
-  createdAt: Timestamp;
-  updatedAt?: Timestamp;
-  likes: string[];
-  ratings: Record<string, number>;
-  averageRating: number;
-  viewCount: number;
-  shareCount: number;
-};
-```
+## `comments` container - partition key `/videoId`
 
-Rules:
+Comments are colocated by video and contain authenticated user identity, text, likes and an ISO creation timestamp.
 
-- Signed-in consumers and creators can read videos.
-- Only creators can create videos.
-- Only the original creator can delete their videos.
-- Video media URLs and creator identity are immutable after create.
-- Signed-in users can add comments, likes, ratings, views, and shares.
+## `activities` container - partition key `/recipientId`
 
-## videos/{videoId}/comments/{commentId}
+Upload, comment, like, rating and follow events are written for a specific recipient. The recipient partition supports an efficient notification feed and persisted read state.
 
-```ts
-type Comment = {
-  id: string;
-  videoId: string;
-  userId: string;
-  userName: string;
-  text: string;
-  likes: string[];
-  createdAt: Timestamp;
-};
-```
+## Object Storage
 
-Rules:
-
-- Signed-in users can comment.
-- Comment owner or video owner can delete a comment.
-- Comments are not edited after posting in the current app.
-
-## activities/{activityId}
-
-```ts
-type Activity = {
-  id: string;
-  recipientId: string;
-  actorId: string;
-  actorName: string;
-  videoId?: string;
-  commentId?: string;
-  type: "upload" | "comment" | "like" | "rating" | "follow" | "delete";
-  text: string;
-  thumbnailUrl?: string;
-  createdAt: Timestamp;
-  read: boolean;
-};
-```
-
-Rules:
-
-- Users can read only their own activity feed.
-- Backend functions create activity records from app events.
+The private Blob container stores `videos/{videoId}/source.<ext>` and `videos/{videoId}/thumbnail.<ext>`. Cosmos holds paths and metadata only. Media is served with immutable caching and HTTP byte-range responses through the Function API.
