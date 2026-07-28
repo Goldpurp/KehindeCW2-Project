@@ -61,6 +61,14 @@ Function API uses Node.js 22.
 - Consumer upload attempts return `403`.
 - Verification accounts were deleted after testing.
 - Direct inspection confirms zero users, videos, comments, activities and blobs.
+- GitHub source:
+  <https://github.com/Goldpurp/kehindeScalableSolution>
+- Render service: `kehinde-scalable-solution`
+- Render application:
+  <https://kehinde-scalable-solution.onrender.com>
+- The published Render bundle references only the new Azure API.
+- An Azure CORS preflight from the new Render origin returns `200`.
+- Responsive browser QA passed 17 phone, tablet, laptop and large-screen checks.
 
 ## CORS
 
@@ -81,3 +89,15 @@ ready-to-run script for an eligible subscription remains:
 ```bash
 bash backend/azure/create-frontdoor-cdn.sh
 ```
+
+## Legacy Fallback
+
+The old Render service and the four old Azure resources are not used by the new
+application. They remain temporarily available as rollback history until their
+permanent deletion is explicitly approved:
+
+- Render service: `kehinde-scalable-solution-legacy`
+- Function App: `goldpurpapi174522579`
+- Cosmos DB account: `goldpurpcosmos174522579`
+- Storage account: `goldpurpst16154530003`
+- Consumption plan: `SwedenCentralPlan`
