@@ -50,8 +50,8 @@ Evidence:
 - `backend/azure/functions/src/shared/policies.test.ts` contains five automated policy tests.
 - `scripts/live-smoke.mjs` checks the deployed Azure endpoint without mutating data.
 - `docs/testing-evidence.md` records the test scope and demonstration trace.
-- Live frontend: <https://kehindecw2-project.onrender.com>
-- Live API: <https://goldpurpapi174522579.azurewebsites.net/api>
+- Live frontend: <https://kehinde-scalable-solution.onrender.com>
+- Live API: <https://kehinde-scalable-solution-api.azurewebsites.net/api>
 
 ## Recorded Demonstration
 

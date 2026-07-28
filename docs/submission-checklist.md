@@ -4,7 +4,7 @@
 
 - Confirm the Render home page loads.
 - Confirm both existing demonstration accounts can sign in.
-- Retrieve the creator invitation code only if a new creator account is required: open Passwords/Keychain Access and search for `KehindeCW2 Creator Signup Code`.
+- Retrieve the creator invitation code only if a new creator account is required: open Passwords/Keychain Access and search for `kehindeScalableSolution Creator Signup Code`.
 - Keep Azure Portal tabs ready for the Function App, Cosmos DB Data Explorer and the `videos` Blob container.
 - Use a small disposable video so upload and deletion complete within the recording.
 - Do not show passwords, bearer tokens, connection strings or Azure app-setting values.
@@ -22,7 +22,7 @@ Follow the timed script in slide 11 speaker notes:
 
 ## Embed the Video
 
-1. Open `KehindeCW2_PowerPoint Project - Final.pptx`.
+1. Open `kehindeScalableSolution Presentation - Final.pptx`.
 2. Select slide 11, then select the large demonstration image frame.
 3. Insert the MP4 using PowerPoint's **Insert > Video > This Device** command.
 4. Resize the video to the inherited frame without covering the timeline on the right.

@@ -2,7 +2,7 @@
 
 ## Design Goal
 
-KehindeCW2 Project must support two different trust journeys. Creators own publication and metadata; consumers read and interact. The API, rather than the interface alone, enforces that distinction.
+kehindeScalableSolution must support two different trust journeys. Creators own publication and metadata; consumers read and interact. The API, rather than the interface alone, enforces that distinction.
 
 ## Selected Architecture
 

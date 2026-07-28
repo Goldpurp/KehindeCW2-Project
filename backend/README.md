@@ -1,6 +1,6 @@
-# KehindeCW2 Project Backend
+# kehindeScalableSolution Backend
 
-This folder contains the Azure production backend for KehindeCW2 Project:
+This folder contains the Azure production backend for kehindeScalableSolution:
 
 - `azure/`: Azure Functions, Cosmos DB, Blob Storage, and Bicep infrastructure.
 

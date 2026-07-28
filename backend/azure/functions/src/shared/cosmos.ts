@@ -1,7 +1,7 @@
 import { CosmosClient } from '@azure/cosmos';
 
 const connectionString = process.env.COSMOS_CONNECTION_STRING;
-const databaseName = process.env.COSMOS_DATABASE_NAME || 'kehindecw2';
+const databaseName = process.env.COSMOS_DATABASE_NAME || 'kehindeScalableSolution';
 
 if (!connectionString) {
   throw new Error('COSMOS_CONNECTION_STRING is required');

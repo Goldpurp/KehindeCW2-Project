@@ -88,7 +88,7 @@ export const getPrincipal = async (request: HttpRequest): Promise<UserPrincipal 
     return {
       id: decoded.userId || claim('sub'),
       email: decoded.userDetails || claim('emails') || '',
-      displayName: claim('name') || decoded.userDetails || 'KehindeCW2 user',
+      displayName: claim('name') || decoded.userDetails || 'kehindeScalableSolution user',
       role: validRole(role) ? role : 'consumer',
       photoURL: '',
       followingIds: []
@@ -104,7 +104,7 @@ export const getPrincipal = async (request: HttpRequest): Promise<UserPrincipal 
   return {
     id,
     email: request.headers.get('x-user-email') || '',
-    displayName: request.headers.get('x-user-name') || 'KehindeCW2 user',
+    displayName: request.headers.get('x-user-name') || 'kehindeScalableSolution user',
     role,
     photoURL: '',
     followingIds: []

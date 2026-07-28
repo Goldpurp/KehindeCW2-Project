@@ -74,7 +74,7 @@ export async function listVideos(request: HttpRequest): Promise<HttpResponseInit
       const page = await iterator.fetchNext();
       return {
         jsonBody: {
-          items: page.resources.map(publicVideo),
+          items: (page.resources || []).map(publicVideo),
           continuationToken: page.continuationToken || null
         }
       };

@@ -7,11 +7,11 @@ set -euo pipefail
 
 SUBSCRIPTION_ID="${SUBSCRIPTION_ID:-783472e2-68ab-434c-ab49-c0d841bd3244}"
 RESOURCE_GROUP="${RESOURCE_GROUP:-KehindeRazaq}"
-PROFILE_NAME="${PROFILE_NAME:-kehindecw2-frontdoor-174522579}"
-ENDPOINT_NAME="${ENDPOINT_NAME:-kehindecw2-edge-174522579}"
-ORIGIN_GROUP_NAME="${ORIGIN_GROUP_NAME:-kehindecw2-api-origin-group}"
-ORIGIN_NAME="${ORIGIN_NAME:-kehindecw2-api-origin}"
-FUNCTION_HOST="${FUNCTION_HOST:-goldpurpapi174522579.azurewebsites.net}"
+PROFILE_NAME="${PROFILE_NAME:-kehinde-scalable-solution-frontdoor}"
+ENDPOINT_NAME="${ENDPOINT_NAME:-kehinde-scalable-solution-edge}"
+ORIGIN_GROUP_NAME="${ORIGIN_GROUP_NAME:-kehinde-scalable-solution-api-origin-group}"
+ORIGIN_NAME="${ORIGIN_NAME:-kehinde-scalable-solution-api-origin}"
+FUNCTION_HOST="${FUNCTION_HOST:-kehinde-scalable-solution-api.azurewebsites.net}"
 
 az account set --subscription "$SUBSCRIPTION_ID"
 az extension add --name cdn --upgrade --yes >/dev/null
@@ -85,13 +85,13 @@ if ! az afd route show \
   --resource-group "$RESOURCE_GROUP" \
   --profile-name "$PROFILE_NAME" \
   --endpoint-name "$ENDPOINT_NAME" \
-  --route-name kehindecw2-api-route \
+  --route-name kehinde-scalable-solution-api-route \
   --output none >/dev/null 2>&1; then
   az afd route create \
     --resource-group "$RESOURCE_GROUP" \
     --profile-name "$PROFILE_NAME" \
     --endpoint-name "$ENDPOINT_NAME" \
-    --route-name kehindecw2-api-route \
+    --route-name kehinde-scalable-solution-api-route \
     --origin-group "$ORIGIN_GROUP_NAME" \
     --supported-protocols Http Https \
     --patterns-to-match /api/* \

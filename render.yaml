@@ -1,15 +1,15 @@
 services:
   - type: web
-    name: kehindecw2-project
+    name: kehinde-scalable-solution
     runtime: static
-    repo: https://github.com/Goldpurp/KehindeCW2-Project
+    repo: https://github.com/Goldpurp/kehindeScalableSolution
     branch: main
     buildCommand: npm ci && npm run build
     staticPublishPath: ./dist
     autoDeployTrigger: commit
     envVars:
       - key: VITE_AZURE_API_BASE_URL
-        value: https://goldpurpapi174522579.azurewebsites.net/api
+        value: https://kehinde-scalable-solution-api.azurewebsites.net/api
     routes:
       - type: rewrite
         source: /*

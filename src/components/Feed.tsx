@@ -197,15 +197,15 @@ function FeedPostCard({
         onShowToast?.("Failed to copy link.");
       }
     } else if (optionType === 'whatsapp') {
-      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent("Check out this video stream on KehindeCW2 Project! " + shareUrl)}`;
+      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent("Check out this video stream on kehindeScalableSolution! " + shareUrl)}`;
       window.open(waUrl, '_blank');
       onShowToast?.("Opening WhatsApp to share!");
     } else if (optionType === 'twitter') {
-      const twUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent("Check out this stream on KehindeCW2 Project! " + shareUrl)}`;
+      const twUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent("Check out this stream on kehindeScalableSolution! " + shareUrl)}`;
       window.open(twUrl, '_blank');
       onShowToast?.("Opening Twitter / X to share!");
     } else if (optionType === 'telegram') {
-      const tgUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent("Check out this stream on KehindeCW2 Project!")}`;
+      const tgUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent("Check out this stream on kehindeScalableSolution!")}`;
       window.open(tgUrl, '_blank');
       onShowToast?.("Opening Telegram to share!");
     }
@@ -774,7 +774,7 @@ export default function Feed({
         <FolderOpen size={44} className="text-zinc-800 mb-3 animate-pulse" />
         <h3 className="text-sm font-bold text-white mb-1">No video streams found</h3>
         <p className="text-xs text-zinc-500 max-w-xs mb-6">
-          Be the first creator to upload a video on KehindeCW2 Project.
+          Be the first creator to upload a video on kehindeScalableSolution.
         </p>
         <button
           onClick={onRefresh}

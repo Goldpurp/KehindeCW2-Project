@@ -8,7 +8,7 @@ The backend uses Azure Functions for REST service logic, Cosmos DB for structure
 az deployment group create \
   --resource-group <resource-group> \
   --template-file backend/azure/infra/main.bicep \
-  --parameters appName=kehindecw2 \
+  --parameters appName=kehinde-scalable-solution \
   --parameters authTokenSecret='<strong-random-secret>' \
   --parameters creatorSignupCode='<private-invitation-code>'
 ```

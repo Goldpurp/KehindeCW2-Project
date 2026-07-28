@@ -426,7 +426,7 @@ export default function CommentsDrawer({
                       <span className="mr-1 font-extrabold text-white">{video.creatorName}</span>
                       <span className="text-zinc-100">{video.title}</span>
                     </p>
-                    <p className="mt-3 text-sky-500">#{video.genre.replace(/\s+/g, '').toLowerCase()} #kehindecw2</p>
+                    <p className="mt-3 text-sky-500">#{video.genre.replace(/\s+/g, '').toLowerCase()} #kehindescalablesolution</p>
                     <p className="mt-2 text-xs font-semibold text-zinc-500">{getRelativeTime(video.createdAt)}</p>
                   </div>
                 </div>

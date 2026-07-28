@@ -2,9 +2,9 @@ const viteEnv = (import.meta as unknown as { env?: Record<string, string | undef
 
 const AZURE_API_BASE_URL =
   viteEnv?.VITE_AZURE_API_BASE_URL?.replace(/\/$/, '') ||
-  'https://goldpurpapi174522579.azurewebsites.net/api';
+  'https://kehinde-scalable-solution-api.azurewebsites.net/api';
 
-const CURRENT_USER_KEY = 'kehindecw2_current_user';
+const CURRENT_USER_KEY = 'kehinde_scalable_solution_current_user';
 
 export enum OperationType {
   CREATE = 'create',
@@ -110,7 +110,7 @@ const authHeaders = () => {
   const headers: Record<string, string> = {
     'x-user-id': user.uid,
     'x-user-email': user.email || '',
-    'x-user-name': user.displayName || 'KehindeCW2 user',
+    'x-user-name': user.displayName || 'kehindeScalableSolution user',
     'x-user-role': user.role || 'consumer'
   };
 
@@ -188,7 +188,7 @@ const userFromAuthResponse = (response: AuthResponse, fallbackEmail: string): Us
   return {
     uid: profile.uid || profile.id || stableUserId(fallbackEmail),
     email: profile.email || fallbackEmail,
-    displayName: profile.displayName || fallbackEmail.split('@')[0] || 'KehindeCW2 user',
+    displayName: profile.displayName || fallbackEmail.split('@')[0] || 'kehindeScalableSolution user',
     role: profile.role || 'consumer',
     photoURL: profile.photoURL || '',
     followingIds: Array.isArray(profile.followingIds) ? profile.followingIds : [],
@@ -231,7 +231,7 @@ export async function createUserWithEmailAndPassword(
       uid,
       email: fallbackEmail,
       password,
-      displayName: profile.displayName?.trim() || fallbackEmail.split('@')[0] || 'KehindeCW2 user',
+      displayName: profile.displayName?.trim() || fallbackEmail.split('@')[0] || 'kehindeScalableSolution user',
       role: profile.role || 'consumer',
       creatorCode: profile.creatorCode?.trim() || undefined
     })

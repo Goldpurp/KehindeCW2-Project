@@ -548,7 +548,7 @@ export default function App() {
     setIsAuthLoading(true);
     try {
       await signInWithEmailAndPassword(auth, authEmail, authPassword);
-      showToast("Welcome back to KehindeCW2 Project!");
+      showToast("Welcome back to kehindeScalableSolution!");
     } catch (err: any) {
       setAuthError(err.message || 'Incorrect security password or user email.');
     } finally {
@@ -561,7 +561,7 @@ export default function App() {
     setAuthError('');
     setIsAuthLoading(true);
     try {
-      const formattedName = authName.trim() || 'KehindeCW2 User';
+      const formattedName = authName.trim() || 'kehindeScalableSolution User';
       const userCredential = await createUserWithEmailAndPassword(auth, authEmail, authPassword, {
         displayName: formattedName,
         role: authRole,
@@ -1143,8 +1143,8 @@ export default function App() {
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#3f3f46] to-[#d4d4d8] flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.3)]">
                 <Crown size={28} className="text-[#f4f4f5]" />
               </div>
-              <h2 className="font-display break-words font-black text-2xl sm:text-3xl tracking-tight text-white uppercase mt-2">
-                KehindeCW2 Project
+              <h2 className="mt-2 break-words font-display text-xl font-black uppercase text-white min-[361px]:text-2xl sm:text-3xl">
+                kehindeScalableSolution
               </h2>
             </div>
 
@@ -1274,7 +1274,7 @@ export default function App() {
             <div className="border-t border-[#27272a] pt-4 mt-4 text-center text-xs text-zinc-400">
               {authMode === 'signin' ? (
                 <>
-                  New to KehindeCW2 Project?{' '}
+                  New to kehindeScalableSolution?{' '}
                   <button 
                     onClick={() => {
                       setAuthMode('signup');
@@ -1444,17 +1444,17 @@ export default function App() {
                 </h1>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-[#3f3f46] flex items-center justify-center">
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#3f3f46]">
                   <Crown size={14} className="text-[#f4f4f5]" />
                 </div>
-                <h1 className="font-display font-black text-lg tracking-tighter uppercase text-white">
-                  KehindeCW2
+                <h1 className="min-w-0 truncate font-display text-[13px] font-black uppercase text-white min-[361px]:text-base">
+                  kehindeScalableSolution
                 </h1>
               </div>
             )}
 
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-1">
               <button
                 onClick={openActivityPanel}
                 className="relative rounded-full p-1.5 text-zinc-300 transition hover:text-white"
@@ -1464,16 +1464,6 @@ export default function App() {
                 <Heart size={19} />
                 {hasUnreadActivity && (
                   <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-white ring-2 ring-black" />
-                )}
-              </button>
-              <button 
-                onClick={() => setViewMode('profile')}
-                className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full border border-zinc-800 bg-zinc-900 text-[10px] font-black text-white"
-              >
-                {sidebarAvatarUrl ? (
-                  <img src={sidebarAvatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-                ) : (
-                  profile?.displayName?.charAt(0).toUpperCase() || 'U'
                 )}
               </button>
               <button
@@ -1610,7 +1600,7 @@ export default function App() {
               {viewMode === 'profile' && (
                 <ProfileScreen
                   username={currentUsername}
-                  displayName={profile?.displayName || user?.displayName || 'KehindeCW2 User'}
+                  displayName={profile?.displayName || user?.displayName || 'kehindeScalableSolution User'}
                   email={profile?.email || user?.email}
                   role={profileRole}
                   photoURL={profile?.photoURL || user?.photoURL || ''}
@@ -1706,7 +1696,7 @@ export default function App() {
                       ))}
                     </div>
                     <p className="mt-7 text-[11px] font-bold uppercase tracking-wide text-zinc-600">
-                      © 2026 KEHINDECW2 PROJECT
+                      © 2026 KEHINDESCALABLESOLUTION
                     </p>
                   </div>
                 </aside>

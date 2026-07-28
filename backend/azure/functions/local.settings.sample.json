@@ -4,7 +4,7 @@
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "node",
     "COSMOS_CONNECTION_STRING": "<cosmos-connection-string>",
-    "COSMOS_DATABASE_NAME": "kehindecw2",
+    "COSMOS_DATABASE_NAME": "kehindeScalableSolution",
     "VIDEO_STORAGE_CONTAINER": "videos",
     "AUTH_TOKEN_SECRET": "<strong-random-secret>",
     "CREATOR_SIGNUP_CODE": "<private-creator-invitation-code>"

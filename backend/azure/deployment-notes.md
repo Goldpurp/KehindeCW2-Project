@@ -1,87 +1,83 @@
-# KehindeCW2 Project Azure Deployment Notes
+# kehindeScalableSolution Azure Deployment Notes
 
-Created in Azure Portal Cloud Shell on 2026-07-10.
+Provisioned and verified on 28 July 2026.
 
 ## Resource Placement
 
 - Subscription: Azure for Students
-- Resource group: KehindeRazaq
-- Location: swedencentral
+- Resource group: `kehindeScalableSolution`
+- Location: `swedencentral`
 
-## Created Resources
+## Active Resources
 
-These Azure resources were created earlier under their original Goldpurp names and are still used by the app.
-
-- Cosmos DB account: `goldpurpcosmos174522579`
-- Cosmos DB database: `goldpurp`
+- Function App: `kehinde-scalable-solution-api`
+- Function API: <https://kehinde-scalable-solution-api.azurewebsites.net/api>
+- Cosmos DB account: `kehinde-scalable-solution-cosmos`
+- Cosmos DB database: `kehindeScalableSolution`
 - Cosmos DB containers:
   - `users` with partition key `/id`
   - `videos` with partition key `/id`
   - `comments` with partition key `/videoId`
   - `activities` with partition key `/recipientId`
-- Storage account: `goldpurpst16154530003`
-- Blob container: `videos`
-- Function App: `goldpurpapi174522579`
+- Storage account: `kehindescalablesolution`
+- Private Blob container: `videos`
+- Consumption plan: `kehinde-scalable-solution-plan`
+- Application Insights: `kehinde-scalable-solution-insights`
 
-## Function App Settings
+The displayed project name uses the requested camel-case form. Azure host and
+account names use lowercase forms because those resource types do not permit
+uppercase characters.
 
-The Function App has these app setting names configured:
+## Security Settings
+
+The Function App has these settings:
 
 - `COSMOS_CONNECTION_STRING`
 - `COSMOS_DATABASE_NAME`
 - `VIDEO_STORAGE_CONTAINER`
-- `VIDEO_STORAGE_ACCOUNT`
 - `AUTH_TOKEN_SECRET`
 - `CREATOR_SIGNUP_CODE`
+- `WEBSITE_NODE_DEFAULT_VERSION`
+- `SCM_DO_BUILD_DURING_DEPLOYMENT`
+- `ENABLE_ORYX_BUILD`
 
-The secret values stay in Azure and are intentionally not stored in this repo.
+Secret values remain in Azure and are not committed. The creator invitation is
+stored in the developer Mac login keychain under
+`kehindeScalableSolution Creator Signup Code`.
 
-## Runtime
+The Storage container is private, TLS 1.2 is required, FTPS is disabled and the
+Function API uses Node.js 22.
 
-The Azure Function App uses Node.js 22 because Azure rejected Node.js 20 as end-of-life.
+## Deployment Verification
 
-## Front Door and CDN Status
+- Infrastructure deployment:
+  `kehinde-scalable-solution-infrastructure`
+- Initial code deployment ID: `141144aea8644b50a61e6e056cd63e53`
+- Corrected empty-feed deployment ID: `3524ca03719149afad2b263e3d35f0a1`
+- Anonymous video access returns `401`.
+- An invalid creator invitation returns `403`.
+- Temporary creator and consumer accounts resolve to the correct roles.
+- The new database returns an empty paged feed instead of an error.
+- Consumer upload attempts return `403`.
+- Verification accounts were deleted after testing.
+- Direct inspection confirms zero users, videos, comments, activities and blobs.
 
-Attempted on 2026-07-11 from Azure Portal Cloud Shell.
+## CORS
 
-- `Microsoft.Cdn` provider registration completed on the `Azure for Students` subscription.
-- Azure Front Door Standard profile creation was blocked by Azure with:
-  `Free Trial and Student account is forbidden for Azure Frontdoor resources.`
-- Azure CDN classic profile creation was also blocked because Microsoft no longer supports creating new classic CDN profiles.
-- No Front Door/CDN endpoint was created on this subscription.
+Allowed frontend origins:
 
-The ready-to-run script for an eligible paid subscription is:
+- `https://kehinde-scalable-solution.onrender.com`
+- `http://127.0.0.1:3000`
+- `http://localhost:3000`
+- `http://127.0.0.1:3003`
+- `http://localhost:3003`
+
+## Front Door and CDN
+
+`Microsoft.Cdn` is registered, but Azure for Students does not permit Azure Front
+Door Standard creation. Classic Azure CDN no longer accepts new profiles. The
+ready-to-run script for an eligible subscription remains:
 
 ```bash
 bash backend/azure/create-frontdoor-cdn.sh
 ```
-
-After that script succeeds, set the frontend API base URL to the printed `https://<front-door-host>/api` value.
-
-## API Source Status
-
-- The frontend now targets `https://goldpurpapi174522579.azurewebsites.net/api` by default.
-- The Azure Functions source in `backend/azure/functions` contains the live API routes for users, videos, comments, ratings, activities, and Blob-backed media playback.
-- A Cloud Shell zip deployment was started on 2026-07-10 and reached the Azure zip deployment polling step, but the public Function URL was still returning Azure's placeholder `503 Site Under Construction` page during final verification.
-- On 2026-07-11, the Azure Functions API was redeployed with token-based email/password signup and signin. Header-only local users are rejected unless the Function App explicitly enables `ALLOW_UNSAFE_HEADER_AUTH=true`.
-- The live Cosmos containers (`users`, `videos`, `comments`, `activities`) and the `videos` blob container were emptied after deployment so the app starts with no preloaded accounts or videos.
-- On 2026-07-12, the Function App CORS allowed origins were updated for the Render deployment:
-  - `https://kehindecw2-project.onrender.com`
-  - `http://127.0.0.1:3000`
-  - `http://localhost:3000`
-  - `http://127.0.0.1:3003`
-  - `http://localhost:3003`
-- CORS preflight checks for signup and authenticated video requests from Render returned `200 OK`.
-- On 2026-07-12, the Function App was redeployed from commit `55b2df5`.
-  - Video views now count unique signed-in consumer users in `viewedBy`.
-  - Creator self-views are ignored.
-  - Legacy inflated `viewCount` values are no longer trusted by API responses unless backed by real `viewedBy` entries.
-  - The deployed `/api/videos` route returns `401 Sign in required` without an auth token, confirming the live API is enforcing authentication.
-- On 2026-07-27, the verified backend revision was deployed with Azure CLI zip deployment ID `40b83baafe194ac189dd7869593c3bb5`.
-  - `AUTH_TOKEN_SECRET` and `CREATOR_SIGNUP_CODE` were rotated and stored only as Azure app settings; the creator code is also stored in the developer Mac login keychain under `KehindeCW2 Creator Signup Code`.
-  - Public signup creates consumer accounts; creator signup without the server invitation returns `403`.
-  - Producer, publisher and ownership metadata are derived from the authenticated creator.
-  - `GET /api/videos?pageSize=1` returns a bounded page object with one item.
-  - A media request with `Range: bytes=0-31` returns `206`, `Accept-Ranges: bytes` and a valid `Content-Range` header.
-  - The production dependency audit reports zero known vulnerabilities.
-  - The live smoke suite confirms anonymous access `401`, consumer upload `403`, creator self-rating `403`, and correct persisted roles.

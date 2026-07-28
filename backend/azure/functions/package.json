@@ -1,5 +1,5 @@
 {
-  "name": "kehindecw2-azure-functions",
+  "name": "kehinde-scalable-solution-azure-functions",
   "private": true,
   "type": "module",
   "main": "dist/functions/*.js",

@@ -1,4 +1,4 @@
-param appName string = 'kehindecw2'
+param appName string = 'kehinde-scalable-solution'
 param location string = resourceGroup().location
 
 @secure()
@@ -7,13 +7,12 @@ param authTokenSecret string
 @secure()
 param creatorSignupCode string
 
-var normalizedName = toLower(replace(appName, '-', ''))
-var storageName = take('${normalizedName}st${uniqueString(resourceGroup().id)}', 24)
-var cosmosName = '${appName}-cosmos-${uniqueString(resourceGroup().id)}'
+var storageName = 'kehindescalablesolution'
+var cosmosName = '${appName}-cosmos'
 var planName = '${appName}-plan'
-var functionName = '${appName}-api-${uniqueString(resourceGroup().id)}'
+var functionName = '${appName}-api'
 var appInsightsName = '${appName}-insights'
-var databaseName = 'kehindecw2'
+var databaseName = 'kehindeScalableSolution'
 
 resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name: storageName
@@ -151,6 +150,18 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
   properties: {
     serverFarmId: plan.id
     siteConfig: {
+      ftpsState: 'Disabled'
+      minTlsVersion: '1.2'
+      cors: {
+        allowedOrigins: [
+          'https://kehinde-scalable-solution.onrender.com'
+          'http://127.0.0.1:3000'
+          'http://localhost:3000'
+          'http://127.0.0.1:3003'
+          'http://localhost:3003'
+        ]
+        supportCredentials: false
+      }
       appSettings: [
         {
           name: 'AzureWebJobsStorage'
@@ -163,6 +174,18 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'FUNCTIONS_WORKER_RUNTIME'
           value: 'node'
+        }
+        {
+          name: 'WEBSITE_NODE_DEFAULT_VERSION'
+          value: '~22'
+        }
+        {
+          name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'
+          value: 'true'
+        }
+        {
+          name: 'ENABLE_ORYX_BUILD'
+          value: 'true'
         }
         {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
@@ -195,5 +218,6 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
 }
 
 output functionApiName string = functionApp.name
+output functionApiUrl string = 'https://${functionApp.properties.defaultHostName}/api'
 output cosmosAccountName string = cosmos.name
 output storageAccountName string = storage.name

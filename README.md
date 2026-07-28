@@ -1,12 +1,12 @@
-# KehindeCW2 Project
+# kehindeScalableSolution
 
-KehindeCW2 Project is a deployed, role-aware video platform developed for COM769 Coursework 2. Creator accounts publish governed video records; consumer accounts discover, play, comment on, like and rate that content without receiving upload permissions.
+kehindeScalableSolution is a deployed, role-aware video platform developed for COM769 Coursework 2. Creator accounts publish governed video records; consumer accounts discover, play, comment on, like and rate that content without receiving upload permissions.
 
 ## Live Solution
 
-- Frontend: <https://kehindecw2-project.onrender.com>
-- Azure Functions API: <https://goldpurpapi174522579.azurewebsites.net/api>
-- Source: <https://github.com/Goldpurp/KehindeCW2-Project>
+- Frontend: <https://kehinde-scalable-solution.onrender.com>
+- Azure Functions API: <https://kehinde-scalable-solution-api.azurewebsites.net/api>
+- Source: <https://github.com/Goldpurp/kehindeScalableSolution>
 
 ## Architecture
 
@@ -87,4 +87,4 @@ Deployment evidence, limitations and the production roadmap are documented under
 - `docs/submission-checklist.md`: recording, embedding and final hand-in checks.
 - `security_spec.md`: trust boundaries, abuse cases and enforced controls.
 - `backend/azure/deployment-notes.md`: deployed resources and subscription limitations.
-- `KehindeCW2_PowerPoint Project.pptx`: assessment presentation in the parent folder.
+- `kehindeScalableSolution Presentation - Final.pptx`: assessment presentation in the parent folder.

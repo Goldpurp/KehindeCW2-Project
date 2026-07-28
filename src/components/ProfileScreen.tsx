@@ -65,7 +65,7 @@ export default function ProfileScreen({
   onDeleteVideo,
   onSelectVideo
 }: ProfileScreenProps) {
-  const cleanUsername = username || 'kehindecw2_user';
+  const cleanUsername = username || 'kehinde_scalable_solution_user';
   const initials = cleanUsername.slice(0, 2).toUpperCase();
   const isCreator = role === 'creator';
   const profileImageUrl = photoURL || videos.find((video) => video.creatorPhotoURL)?.creatorPhotoURL || '';

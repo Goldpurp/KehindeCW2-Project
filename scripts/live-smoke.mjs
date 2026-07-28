@@ -1,11 +1,11 @@
-const baseUrl = (process.env.CW2_API_BASE_URL || '').replace(/\/$/, '');
+const baseUrl = (process.env.KSS_API_BASE_URL || '').replace(/\/$/, '');
 
 const required = [
-  'CW2_API_BASE_URL',
-  'CW2_CREATOR_EMAIL',
-  'CW2_CREATOR_PASSWORD',
-  'CW2_CONSUMER_EMAIL',
-  'CW2_CONSUMER_PASSWORD'
+  'KSS_API_BASE_URL',
+  'KSS_CREATOR_EMAIL',
+  'KSS_CREATOR_PASSWORD',
+  'KSS_CONSUMER_EMAIL',
+  'KSS_CONSUMER_PASSWORD'
 ];
 
 const missing = required.filter((name) => !process.env[name]);
@@ -58,8 +58,8 @@ const expectStatus = (actual, expected, label) => {
 const unauthenticated = await request('/videos');
 expectStatus(unauthenticated.response.status, 401, 'Anonymous video access');
 
-const creator = await signIn(process.env.CW2_CREATOR_EMAIL, process.env.CW2_CREATOR_PASSWORD);
-const consumer = await signIn(process.env.CW2_CONSUMER_EMAIL, process.env.CW2_CONSUMER_PASSWORD);
+const creator = await signIn(process.env.KSS_CREATOR_EMAIL, process.env.KSS_CREATOR_PASSWORD);
+const consumer = await signIn(process.env.KSS_CONSUMER_EMAIL, process.env.KSS_CONSUMER_PASSWORD);
 
 if (creator.user.role !== 'creator') throw new Error('Creator account resolved to the wrong role');
 if (consumer.user.role !== 'consumer') throw new Error('Consumer account resolved to the wrong role');
